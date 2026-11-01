@@ -9,3 +9,4 @@ example/dist-pages/
 site/dist-pages/
 site/dist/
 site/.velocita-cache/
+.lighthouseci/
