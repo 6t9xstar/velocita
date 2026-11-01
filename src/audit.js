@@ -10,7 +10,7 @@ export function auditSite({ pages, htmlByUrl, files }) {
     if (!ids.has(url)) ids.set(url, new Set([...(htmlByUrl.get(url) || '').matchAll(/\sid="([^"]+)"/g)].map(m => m[1])));
     return ids.get(url);
   };
-  const exists = path => htmlByUrl.has(path) || files.has(path.replace(/^\//, '')) || htmlByUrl.has(path.endsWith('/') ? path : path + '/');
+  const exists = path => htmlByUrl.has(path) || files.has(path.replace(/^\//, '')) || files.has(path.replace(/^\//, '') + 'index.html') || htmlByUrl.has(path.endsWith('/') ? path : path + '/');
   const byUrl = new Map(pages.map(p => [p.url, p]));
   const inbound = new Map();
   const linksFrom = new Map();

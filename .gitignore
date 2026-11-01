@@ -4,3 +4,4 @@ example/dist/
 *.log
 bench-site/
 .velocita-cache/
+.claude/

@@ -58,7 +58,7 @@ ${head}
 <a class="skip" href="#main">Skip to content</a>
 <header class="site"><div class="wrap"><a class="brand" href="/">${e(site.title)}</a><nav aria-label="Main">${nav}${langSwitch(page)}</nav></div></header>
 <main id="main" class="wrap">${content}</main>
-<footer class="site"><div class="wrap">© ${new Date().getFullYear()} ${e(site.author || site.title)} · <a href="/feed.xml">RSS</a> · <a href="/sitemap.xml">Sitemap</a></div></footer>
+<footer class="site"><div class="wrap">© ${new Date().getFullYear()} ${e(site.author || site.title)} · <a href="${page.feedBase || '/'}feed.xml">RSS</a> · <a href="/sitemap.xml">Sitemap</a></div></footer>
 </body>
 </html>`;
 }
@@ -83,6 +83,11 @@ ${tags ? `<p class="tags">${tags}</p>` : ''}
   list: ({ page, site }) => `<h1>${e(page.title)}</h1>${page.html}
 <ul class="list">${page.items.map(p => `<li><h2><a href="${p.url}">${e(p.title)}</a></h2><p class="meta">${date(p.date, site.lang)} · ${p.readingTime} min read</p><p>${e(p.description || p.excerpt)}</p></li>`).join('')}</ul>
 ${pager(page.pagination)}`,
+
+  search: ({ page }) => `<h1>${e(page.title)}</h1>
+<form role="search" action="${page.url}"><input type="search" name="q" aria-label="${e(page.title)}" style="width:100%;font:inherit;padding:.6rem .8rem;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:inherit"></form>
+<v-island name="search" load="load"></v-island>
+<noscript><p>Search needs JavaScript. Browse the <a href="/sitemap.xml">sitemap</a> instead.</p></noscript>`,
 
   notFound: () => `<h1>Page not found</h1><p>Sorry, that page doesn’t exist. <a href="/">Go home</a>.</p>`,
 };

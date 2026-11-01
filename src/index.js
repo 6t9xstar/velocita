@@ -5,4 +5,7 @@ export { parseFrontmatter } from './frontmatter.js';
 export { seoHead, jsonLd, lintPage, breadcrumbs } from './seo.js';
 export { minifyHtml, minifyCss } from './minify.js';
 export { imageSize } from './images.js';
+export { fromJson, fromContentful, fromSanity } from './sources.js';
+export { pingIndexNow } from './indexnow.js';
+export { collectIslands } from './islands.js';
 export { shell, layouts, css } from './theme.js';

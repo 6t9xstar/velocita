@@ -10,6 +10,9 @@ import { Output } from './output.js';
 import { createImagePipeline } from './responsive.js';
 import { generateOgImages } from './og.js';
 import { auditSite } from './audit.js';
+import { writeFeeds } from './feeds.js';
+import { writeRedirects } from './redirects.js';
+import { collectIslands } from './islands.js';
 
 const walk = dir => !existsSync(dir) ? [] : readdirSync(dir).flatMap(f => {
   const p = join(dir, f);
@@ -58,11 +61,15 @@ export async function build(root = '.', opts = {}) {
 
   // 1. Load + render content
   const pages = [];
-  for (const file of walk(contentDir).filter(f => /\.(md|markdown|html)$/.test(f))) {
-    const src = readFileSync(file, 'utf8');
-    const { data, body } = parseFrontmatter(src);
+  // Entries come from content/ files and from `sources` (headless CMS / JSON adapters).
+  const entries = walk(contentDir).filter(f => /\.(md|markdown|html)$/.test(f)).map(file => ({
+    file, rel: relative(contentDir, file).replace(/\\/g, '/'), ...parseFrontmatter(readFileSync(file, 'utf8')),
+  }));
+  for (const source of site.sources || []) {
+    for (const e of await source(site)) entries.push({ rel: e.path.replace(/^\//, ''), data: e.data || {}, body: e.body || '' });
+  }
+  for (const { file, rel, data, body } of entries) {
     if (data.draft && !site.drafts) continue;
-    const rel = relative(contentDir, file).replace(/\\/g, '/');
     const path = rel.replace(/\.(md|markdown|html)$/, '').replace(/(^|\/)index$/, '');
     const url = data.permalink || (path ? `/${path.split('/').map(slugify).join('/')}/` : '/');
     // Multilingual: content/<locale>/... for every locale except the first (default) one.
@@ -72,16 +79,16 @@ export async function build(root = '.', opts = {}) {
     const prefix = lang === locales[0] ? '' : lang + '/';
     const local = rel.slice(prefix.length);
     const section = local.includes('/') ? prefix + local.split('/')[0] : null;
-    const rendered = file.endsWith('.html')
+    const rendered = rel.endsWith('.html')
       ? { html: body, toc: [], text: body.replace(/<[^>]+>/g, ' '), words: 0, readingTime: 1 }
       : renderMarkdown(body, {
         siteUrl: site.url,
-        image: src => images.process(src, src.startsWith('/') ? join(publicDir, src) : join(dirname(file), src)),
+        image: src => images.process(src, src.startsWith('/') ? join(publicDir, src) : file ? join(dirname(file), src) : ''),
       });
-    const date = toDate(data.date) || (section ? statSync(file).mtime : null);
+    const date = toDate(data.date) || (section && file ? statSync(file).mtime : null);
     pages.push({
       ...data, ...rendered, file, rel, url, section, markdown: body, lang,
-      translationKey: data.translationKey || local.replace(/.(md|markdown|html)$/, ''),
+      translationKey: data.translationKey || local.replace(/\.(md|markdown|html)$/, ''),
       date, updated: toDate(data.updated),
       tags: (data.tags || []).map(t => ({ name: String(t), slug: slugify(t), url: `/${prefix}tags/${slugify(t)}/` })),
       type: data.type || (section && date ? 'article' : 'page'),
@@ -122,6 +129,10 @@ export async function build(root = '.', opts = {}) {
   });
 
   paginate(pages, site);
+  if (site.search !== false) for (const lang of site.locales || [site.lang]) {
+    const base = lang === (site.locales || [site.lang])[0] ? '/' : `/${lang}/`;
+    if (!pages.some(p => p.url === `${base}search/`)) pages.push({ title: site.searchTitle?.[lang] || 'Search', url: `${base}search/`, lang, layout: 'search', noindex: true, html: '', toc: [], text: '', type: 'page' });
+  }
   const ogCount = await generateOgImages(pages, site, output);
   const ctx = { site, pages, articles, sections, tags: tagMap };
 
@@ -137,12 +148,16 @@ export async function build(root = '.', opts = {}) {
   const write = (url, html) => {
     emit(url.endsWith('.html') ? url : url + 'index.html', html);
   };
+  const islands = collectIslands(site, emit);
+  const feedMap = writeFeeds({ site, articles, sections, tags: tagMap, emit });
+  const locales = site.locales || [site.lang];
+  for (const p of pages) p.feedBase = feedMap[p.url] || (p.lang && p.lang !== locales[0] && feedMap[`/${p.lang}/`]) || '/';
   const htmlByUrl = new Map();
   const render = page => {
     const layout = layouts[page.layout] || layouts.page;
     const content = layout({ page, ...ctx });
     const head = seoHead(page, site) + prefetch + (site.head || '');
-    let html = shell({ page, site, head, content, ...ctx });
+    let html = islands.inject(shell({ page, site, head, content, ...ctx }));
     if (site.dev) html = html.replace('</body>', `<script>new EventSource('/__reload').onmessage=()=>location.reload()</script></body>`);
     return site.minify && !site.dev ? minifyHtml(html) : html;
   };
@@ -173,12 +188,8 @@ ${indexable.map(p => `<url><loc>${site.url}${p.url}</loc>${(p.alternates || []).
   emit('robots.txt',
     `User-agent: *\nAllow: /\n${blocked.map(b => `\nUser-agent: ${b}\nDisallow: /`).join('\n')}\n\nSitemap: ${site.url}/sitemap.xml\n`);
 
-  if (site.feed) emit('feed.xml', `<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel>
-<title>${e(site.title)}</title><link>${site.url}/</link><description>${e(site.description)}</description><language>${site.lang}</language>
-<atom:link href="${site.url}/feed.xml" rel="self" type="application/rss+xml"/>
-${articles.slice(0, 50).map(a => `<item><title>${e(a.title)}</title><link>${site.url}${a.url}</link><guid>${site.url}${a.url}</guid><pubDate>${a.date.toUTCString()}</pubDate><description>${e(a.description || a.excerpt)}</description></item>`).join('\n')}
-</channel></rss>`);
+  const redirects = writeRedirects({ site, pages, emit });
+  warnings.push(...redirects.conflicts);
 
   if (site.llms) {
     const line = p => `- [${p.title}](${site.url}${p.url === '/' ? '/index.md' : p.url.replace(/\/$/, '') + '.md'})${p.description ? `: ${p.description}` : ''}`;
@@ -189,7 +200,7 @@ ${articles.slice(0, 50).map(a => `<item><title>${e(a.title)}</title><link>${site
   }
 
   // Client-side search index (optional to use; costs nothing if unused).
-  emit('search-index.json', JSON.stringify(indexable.filter(p => p.rel).map(p => ({ t: p.title, u: p.url, d: p.description || p.excerpt, k: p.tags?.map(t => t.name) }))));
+  emit('search-index.json', JSON.stringify(indexable.filter(p => p.rel).map(p => ({ t: p.title, u: p.url, d: p.description || p.excerpt, k: p.tags?.map(t => t.name), l: p.lang }))));
 
   // Host config: long-lived caching for assets + security headers (Netlify / Cloudflare Pages format).
   emit('_headers', `/*
@@ -201,13 +212,17 @@ ${articles.slice(0, 50).map(a => `<item><title>${e(a.title)}</title><link>${site
   Cache-Control: public, max-age=0, must-revalidate
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
+/_islands/*
+  Cache-Control: public, max-age=31536000, immutable
+/_img/*
+  Cache-Control: public, max-age=31536000, immutable
 `);
   if (site.indexNowKey) emit(`${site.indexNowKey}.txt`, site.indexNowKey);
 
   await images.flush();
   const audit = site.audit === false ? { errors: [], warnings: [], suggestions: [] } : auditSite({ pages, htmlByUrl, files: new Set(output.files.keys()) });
   const { writtenFiles, ...stats } = await output.flush();
-  const changedUrls = writtenFiles.filter(f => f.endsWith('index.html')).map(f => site.url + '/' + f.replace(/index.html$/, ''));
+  const changedUrls = writtenFiles.filter(f => f.endsWith('index.html')).map(f => site.url + '/' + f.replace(/index[.]html$/, ''));
   const ms = Math.round(performance.now() - t0);
   return { pages: pages.length + 1, ms, warnings, out, audit, changedUrls, ogImages: ogCount, site, ...stats };
 }

@@ -33,13 +33,18 @@ npx github:6t9xstar/velocita build my-site   # incremental production build → 
 | Multilingual | **`content/<lang>/`, hreflang clusters, x-default, sitemap alternates, language switcher** | plugin |
 | More schema | **HowTo, Product, VideoObject, Organization, LocalBusiness** | plugin |
 | IndexNow | **pings only changed URLs** after each build | manual |
+| Interactivity | **islands**: JS only on pages that use them, loaded when visible/idle/on interaction | whole-page hydration |
+| Search | **built-in `/search/`** per language, ~2 KB island over a prebuilt index | third-party service |
+| Headless CMS | **Contentful, Sanity, any JSON** via `sources` | plugin per CMS |
+| Redirects | **`aliases:` + `redirects`** → `_redirects` 301s + HTML fallback | manual |
+| Feeds | **RSS + JSON Feed** for the site, every section, tag and language | one RSS feed |
 
 Benchmark (3,000 posts + 50 tags, Windows laptop, Node 24):
 
 | Build | Time |
 |---|---|
 | Clean (`--clean`) | **2.3 s** |
-| Rebuild, nothing changed | **0.7 s** |
+| Rebuild, nothing changed | **0.8 s** |
 | Rebuild after editing one post | **0.7 s** (3 files written) |
 | First build with OG images (`sharp`, 3,052 cards) | ~46 s once; cached afterwards (rebuild 0.75 s) |
 
@@ -61,6 +66,46 @@ export default { lang: 'en', locales: ['en', 'hi'], nav: { en: [...], hi: [...] 
 ```
 
 `content/about.md` → `/about/`, `content/hi/about.md` → `/hi/about/`. Files with the same path (or the same `translationKey` frontmatter) are linked as translations: hreflang + x-default tags, sitemap `xhtml:link` alternates, and a language switcher.
+
+## Islands (opt-in interactivity)
+
+```js
+// islands/counter.js
+export default function counter(el, { start = 0 }) { /* make el interactive */ }
+```
+
+```html
+<v-island name="counter" load="visible" props='{"start":3}'>Static fallback HTML</v-island>
+```
+
+`load`: `visible` (default), `idle`, `interaction` or `load`. Pages without islands still ship zero JavaScript. Island files are content-hashed under `/_islands/` and cached forever.
+
+## Headless CMS / external content
+
+```js
+import { fromContentful, fromSanity, fromJson } from 'velocita';
+
+export default {
+  sources: [
+    fromContentful({ space: '…', accessToken: process.env.CONTENTFUL_TOKEN, contentType: 'post', section: 'blog' }),
+    fromSanity({ projectId: '…', query: '*[_type=="post"]{title,"slug":slug.current,description,date,body}' }),
+    fromJson({ url: 'https://api.example.com/posts.json', section: 'news' }),
+  ],
+};
+```
+
+A source is just `async (site) => [{ path: 'blog/x.md', data: { title, … }, body: 'markdown' }]`, so any API can be one. Each adapter takes `map(item)` to fit your content model. Source pages get everything file pages get: SEO tags, feeds, OG images, audit.
+
+## Redirects
+
+```yaml
+aliases: [/old-url/, /2019/old-post/]   # frontmatter
+```
+```js
+redirects: { '/rss/': '/feed.xml' }      // config
+```
+
+Generates `_redirects` (real 301s on Netlify / Cloudflare Pages) plus an HTML fallback page with a canonical link for other static hosts.
 
 ## Content
 

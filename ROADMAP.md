@@ -35,11 +35,17 @@ Goal: the fastest, most search- and AI-discoverable framework for content websit
 - Per-locale feeds and llms.txt
 - Custom OG templates (layouts/og.js)
 
-## 🔜 v0.4 — Content platform
-- Zero-JS search (prebuilt index + tiny optional island)
-- Islands: opt-in interactive components hydrated on visible/idle
-- Headless CMS adapters (Git-based, Notion, Sanity, Contentful)
-- Redirect manager (`_redirects`), Atom/JSON Feed per tag
+## ✅ v0.4 — Content platform (shipped)
+- Islands: opt-in interactive components, hydrated on visible / idle / interaction / load; zero JS elsewhere
+- Built-in search page per locale: ~2 KB island over the prebuilt index, language-aware, `?q=` shareable
+- Content sources: `fromContentful`, `fromSanity`, `fromJson`, or any `async () => entries` function
+- Redirects: `aliases` frontmatter + `redirects` config → `_redirects` 301s + HTML fallbacks, conflict warnings
+- Feeds: RSS + JSON Feed per site, locale, section and tag, advertised per page
+
+## 🔜 v0.4.x
+- Notion and Strapi adapters; Git-based CMS config (Decap / Tina)
+- Nested frontmatter (YAML objects)
+- Per-locale llms.txt
 
 ## 🔜 v1.0 — Ecosystem
 - Starter templates: blog, docs, news, agency, local business

@@ -36,7 +36,7 @@ export function seoHead(page, site) {
     for (const t of page.tags || []) tags.push(`<meta property="article:tag" content="${e(t)}">`);
   }
   for (const alt of page.alternates || []) tags.push(`<link rel="alternate" hreflang="${e(alt.lang)}" href="${abs(site, alt.url)}">`);
-  if (site.feed !== false) tags.push(`<link rel="alternate" type="application/rss+xml" title="${e(site.title)}" href="/feed.xml">`);
+  if (site.feed !== false) tags.push(`<link rel="alternate" type="application/rss+xml" title="${e(site.title)}" href="${page.feedBase || '/'}feed.xml">`, `<link rel="alternate" type="application/feed+json" title="${e(site.title)}" href="${page.feedBase || '/'}feed.json">`);
   tags.push(`<script type="application/ld+json">${JSON.stringify(jsonLd(page, site, canonical, desc, image)).replace(/</g, '\\u003c')}</script>`);
   return tags.join('\n');
 }
@@ -73,8 +73,8 @@ export function jsonLd(page, site, canonical, desc, image) {
     aggregateRating: page.rating ? { '@type': 'AggregateRating', ratingValue: page.rating, reviewCount: page.reviewCount || 1 } : undefined,
   }));
   if (page.video) graph.push(clean({
-    '@type': 'VideoObject', name: page.videoTitle || page.title, description: desc, contentUrl: /.(mp4|webm)$/.test(page.video) ? page.video : undefined,
-    embedUrl: /.(mp4|webm)$/.test(page.video) ? undefined : page.video, thumbnailUrl: abs(site, page.videoThumbnail || image || ''),
+    '@type': 'VideoObject', name: page.videoTitle || page.title, description: desc, contentUrl: /[.](mp4|webm)$/.test(page.video) ? page.video : undefined,
+    embedUrl: /[.](mp4|webm)$/.test(page.video) ? undefined : page.video, thumbnailUrl: abs(site, page.videoThumbnail || image || ''),
     uploadDate: (page.date || new Date()).toISOString(), duration: page.videoDuration,
   }));
   if (page.faq) graph.push({
