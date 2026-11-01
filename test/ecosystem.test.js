@@ -10,7 +10,7 @@ import { writeDeployConfig, targets } from '../src/deploy.js';
 
 const tmp = prefix => mkdtempSync(join(tmpdir(), `velocita-${prefix}-`));
 
-for (const template of ['blog', 'docs', 'business']) {
+for (const template of ['blog', 'docs', 'business', 'news', 'portfolio']) {
   test(`template "${template}": scaffolds, builds clean, passes audit and budget`, async () => {
     const root = tmp(template);
     try {
@@ -37,7 +37,7 @@ for (const template of ['blog', 'docs', 'business']) {
 }
 
 test('templates list and scaffold guards', () => {
-  assert.deepEqual(templates().sort(), ['blog', 'business', 'docs']);
+  assert.deepEqual(templates().sort(), ['blog', 'business', 'docs', 'news', 'portfolio']);
   const root = tmp('guard');
   try {
     writeFileSync(join(root, 'existing.txt'), 'x');

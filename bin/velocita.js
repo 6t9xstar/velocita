@@ -3,7 +3,7 @@ import { spawnSync } from 'node:child_process';
 import { build } from '../src/build.js';
 import { dev } from '../src/dev.js';
 import { pingIndexNow } from '../src/indexnow.js';
-import { createSite, templates } from '../src/scaffold.js';
+import { createSite, templates, askSite } from '../src/scaffold.js';
 import { checkSite } from '../src/check.js';
 import { writeDeployConfig, deployCommand, targets } from '../src/deploy.js';
 
@@ -53,8 +53,12 @@ if (cmd === 'build' || cmd === 'audit') {
   await dev(rest[0] || '.', Number(flag('--port')) || 3000, { host: flag('--host') || '127.0.0.1' });
 } else if (cmd === 'new') {
   try {
-    const s = createSite(rest[0] || 'my-site', { template: flag('--template') || 'blog', title: flag('--title') });
-    console.log(`✔ created ${s.template} site "${s.title}" in ${s.dir}\n\n  cd ${rest[0] || 'my-site'}\n  npm install\n  npm run dev`);
+    // Interactive in a terminal when something is missing; --yes takes the defaults.
+    const given = { dir: rest[0], template: flag('--template'), title: flag('--title') };
+    const a = has('--yes') ? given : await askSite(given);
+    const dir = a.dir || 'my-site';
+    const s = createSite(dir, { template: a.template || 'blog', title: a.title });
+    console.log(`✔ created ${s.template} site "${s.title}" in ${s.dir}\n\n  cd ${dir}\n  npm install\n  npm run dev`);
   } catch (err) { fail(err.message); }
 } else if (cmd === 'deploy') {
   // velocita deploy init <target> [dir]   → write provider config + lighthouserc.json
@@ -80,7 +84,8 @@ if (cmd === 'build' || cmd === 'audit') {
 } else {
   console.log(`velocita: sonic-speed, SEO-first static sites
 
-  velocita new   [dir] [--template ${templates().join('|')}] [--title "My Site"]
+  velocita new   [dir] [--template ${templates().join('|')}] [--title "My Site"] [--yes]
+                                        asks for anything missing when run in a terminal
   velocita dev   [dir] [--port N] [--host H]  dev server with live reload (localhost only unless --host 0.0.0.0)
   velocita build [dir] [--clean] [--strict] [--check] [--indexnow]
                                         production build to dist/ (incremental)

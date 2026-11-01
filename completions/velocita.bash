@@ -5,7 +5,7 @@ _velocita() {
   prev="${COMP_WORDS[COMP_CWORD-1]}"
   cmd="${COMP_WORDS[1]}"
   case "$prev" in
-    --template) COMPREPLY=($(compgen -W "blog docs business" -- "$cur")); return ;;
+    --template) COMPREPLY=($(compgen -W "blog docs business news portfolio" -- "$cur")); return ;;
     --port|--host|--title) return ;;
     init) COMPREPLY=($(compgen -W "github cloudflare netlify vercel" -- "$cur")); return ;;
   esac
@@ -13,7 +13,7 @@ _velocita() {
     COMPREPLY=($(compgen -W "new dev build audit check deploy help" -- "$cur")); return
   fi
   case "$cmd" in
-    new)    COMPREPLY=($(compgen -W "--template --title" -- "$cur")) ;;
+    new)    COMPREPLY=($(compgen -W "--template --title --yes" -- "$cur")) ;;
     dev)    COMPREPLY=($(compgen -W "--port --host" -- "$cur")) ;;
     build)  COMPREPLY=($(compgen -W "--clean --strict --check --indexnow" -- "$cur")) ;;
     deploy) COMPREPLY=($(compgen -W "init cloudflare netlify vercel" -- "$cur")) ;;

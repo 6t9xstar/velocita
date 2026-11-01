@@ -56,8 +56,13 @@ Goal: the fastest, most search- and AI-discoverable framework for content websit
 - Auto-generated favicon (no `/favicon.ico` 404s)
 - Layout helpers (`h.escape`, `h.date`, `h.pager`) and per-section layout/type config
 
+## ✅ v1.1 — Ecosystem, continued (shipped)
+- More templates: news/magazine (NewsArticle schema) and agency/portfolio (CreativeWork schema)
+- Theme packages shareable on npm (`theme: 'velocita-theme-…'`), with `velocita-theme-paper` as the reference theme
+- `velocita new` / `npm create velocita` interactive prompts
+- Release pipeline for npm with provenance (`velocita`, `create-velocita`, `velocita-theme-paper`)
+
 ## 🔜 Next
-- Publish to npm (`npm i velocita`)
-- More templates: news/magazine, agency/portfolio
-- Theme packages that can be shared on npm
-- `velocita new` interactive prompts
+- First npm publish (tag `v1.1.0` once the `NPM_TOKEN` secret is set)
+- Lighthouse CI numbers for the news and portfolio templates
+- A theme gallery page on the website

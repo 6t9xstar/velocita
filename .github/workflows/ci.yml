@@ -32,8 +32,8 @@ jobs:
       - name: Scaffold every template and build it
         shell: bash
         run: |
-          for t in blog docs business; do
-            node bin/velocita.js new "$RUNNER_TEMP/site-$t" --template "$t"
+          for t in blog docs business news portfolio; do
+            node bin/velocita.js new "$RUNNER_TEMP/site-$t" --template "$t" --yes
             node bin/velocita.js build "$RUNNER_TEMP/site-$t" --strict --check
           done
   package:

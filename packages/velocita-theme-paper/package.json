@@ -1,0 +1,31 @@
+{
+  "name": "velocita-theme-paper",
+  "version": "1.1.0",
+  "description": "A calm, serif reading theme for Velocita",
+  "type": "module",
+  "exports": {
+    ".": "./index.js"
+  },
+  "files": [
+    "index.js",
+    "README.md"
+  ],
+  "peerDependencies": {
+    "velocita": ">=1.1.0"
+  },
+  "keywords": [
+    "velocita",
+    "velocita-theme",
+    "theme"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/6t9xstar/velocita.git",
+    "directory": "packages/velocita-theme-paper"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}

@@ -6,9 +6,9 @@ Register-ArgumentCompleter -Native -CommandName velocita -ScriptBlock {
   if ($wordToComplete -ne '' -and $words.Count -gt 1) { $prev = $words[-2] }
   $options = switch ($true) {
     ($words.Count -le 2 -and $prev -notmatch '^-') { 'new', 'dev', 'build', 'audit', 'check', 'deploy', 'help' }
-    ($prev -eq '--template') { 'blog', 'docs', 'business' }
+    ($prev -eq '--template') { 'blog', 'docs', 'business', 'news', 'portfolio' }
     ($prev -eq 'init') { 'github', 'cloudflare', 'netlify', 'vercel' }
-    ($words[1] -eq 'new') { '--template', '--title' }
+    ($words[1] -eq 'new') { '--template', '--title', '--yes' }
     ($words[1] -eq 'dev') { '--port', '--host' }
     ($words[1] -eq 'build') { '--clean', '--strict', '--check', '--indexnow' }
     ($words[1] -eq 'deploy') { 'init', 'cloudflare', 'netlify', 'vercel' }

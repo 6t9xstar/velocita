@@ -4,7 +4,13 @@ All notable changes are listed here. Velocita follows [Semantic Versioning](http
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-01
+
 ### Added
+- **Themes**: `theme: 'velocita-theme-x' | './file.js' | { … } | [ … ]` in config. A theme provides `config` defaults, `css` and `layouts`/`shell`; the site's own config, CSS and `layouts/` still win. Example package: `packages/velocita-theme-paper`. Docs: /docs/themes/.
+- **Templates**: `news` (front page with lead story and section blocks, NewsArticle / OpinionNewsArticle schema) and `portfolio` (case studies with results, services, contact, CreativeWork schema).
+- **Interactive `velocita new`** (and `npm create velocita`): asks for folder, template (with descriptions) and title when they're missing in a terminal; `--yes` skips questions. Exported as `askSite()` and `templateInfo`.
+- npm release workflow publishes `velocita`, `create-velocita` and `velocita-theme-paper` together, and points scaffolded sites at the npm version.
 - **Persistent render cache**: rendered Markdown is stored in `.velocita-cache/markdown.bin` and reused when a file's content (and any images it references) are unchanged. Disable with `cache: false`.
 - **Lazy, keyed HTML output**: a page that renders to the same HTML as last build is neither minified nor written.
 - TypeScript declarations for the public API and config (`src/index.d.ts`), and a `defineConfig()` helper.

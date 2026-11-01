@@ -1,6 +1,6 @@
 {
   "name": "create-velocita",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Scaffold a new Velocita site: npm create velocita@latest",
   "type": "module",
   "bin": {
@@ -11,7 +11,7 @@
     "README.md"
   ],
   "dependencies": {
-    "velocita": "^1.0.0"
+    "velocita": "^1.1.0"
   },
   "engines": {
     "node": ">=20"

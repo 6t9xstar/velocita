@@ -16,6 +16,7 @@ import { writeRedirects } from './redirects.js';
 import { collectIslands } from './islands.js';
 import { basePath, withBase } from './base.js';
 import { BuildCache } from './cache.js';
+import { loadThemes } from './themes.js';
 
 const walk = dir => !existsSync(dir) ? [] : readdirSync(dir).flatMap(f => {
   const p = join(dir, f);
@@ -27,12 +28,18 @@ const toDate = v => (v ? new Date(v) : null);
 export async function loadConfig(root) {
   const file = join(root, 'velocita.config.js');
   const user = existsSync(file) ? (await import(pathToFileURL(file).href + `?t=${Date.now()}`)).default : {};
+  // Precedence: built-in defaults < theme config < the site's own config. Theme CSS goes before site CSS.
+  const themes = await loadThemes(root, user.theme);
+  const css = [...themes.map(t => t.css), user.css].filter(Boolean).join('\n');
   return {
     title: 'My Site', description: '', url: 'http://localhost:3000', lang: 'en',
     contentDir: 'content', publicDir: 'public', outDir: 'dist', layoutsDir: 'layouts',
     minify: true, pageSize: 20, prefetch: true, drafts: false, feed: true, llms: true, markdownMirror: true,
     aiCrawlers: 'allow', // 'allow' | 'block' | 'search-only'
+    ...Object.assign({}, ...themes.map(t => t.config)),
     ...user,
+    ...(css ? { css } : {}),
+    themes,
   };
 }
 
@@ -43,7 +50,7 @@ async function loadLayouts(root, site) {
     const name = relative(dir, f).replace(/\.js$/, '').replace(/\\/g, '/');
     custom[name] = (await import(pathToFileURL(f).href + `?t=${Date.now()}`)).default;
   }
-  return { ...theme.layouts, ...custom };
+  return { ...theme.layouts, ...Object.assign({}, ...(site.themes || []).map(t => t.layouts)), ...custom };
 }
 
 const hashText = s => createHash('sha1').update(s).digest('hex').slice(0, 12);

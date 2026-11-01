@@ -145,6 +145,10 @@ export function fromSanity(opts: SourceCommon & { projectId: string; query: stri
 export function createSite(dir: string, opts?: { template?: string; title?: string }): { dir: string; name: string; title: string; date: string; template: string };
 /** Names of the bundled starter templates. */
 export function templates(): string[];
+/** One-line description per template. */
+export const templateInfo: Record<string, string>;
+/** Prompts for whichever of dir/template/title were not given. Asks nothing when stdin is not a TTY. */
+export function askSite(given?: { dir?: string; template?: string; title?: string }, io?: { input?: unknown; output?: { write(s: string): unknown } }): Promise<{ dir?: string; template?: string; title?: string }>;
 
 export function pingIndexNow(site: ResolvedConfig, urls: string[], opts?: { endpoint?: string; fetchImpl?: typeof fetch }): Promise<unknown>;
 export function collectIslands(site: ResolvedConfig, emit: (file: string, data: string) => void): { inject(html: string): string };

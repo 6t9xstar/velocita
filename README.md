@@ -32,7 +32,7 @@ Velocita is a static site framework for content websites: blogs, docs, marketing
 It builds in SEO, AI-search (GEO) and performance work that other frameworks leave to plugins: JSON-LD, `llms.txt`, Markdown mirrors for AI agents, social cards, a site-wide SEO audit and a performance budget.
 
 ```bash
-velocita new my-site          # scaffold from a template (blog, docs, business)
+velocita new                  # interactive: folder, template (blog, docs, business, news, portfolio), title
 velocita dev my-site          # live-reload dev server on http://localhost:3000
 velocita build my-site        # production build to dist/: incremental and cached
 velocita audit my-site        # broken links, orphans, duplicate titles, link suggestions
@@ -105,6 +105,7 @@ export default defineConfig({
 | **Quality gates** | Build-time SEO lint, a site-wide audit (`--strict` fails CI on broken links/anchors), a performance budget (`--check`) and a Lighthouse CI config |
 | **Content** | Markdown with frontmatter, collections, tags, pagination, multilingual routing with hreflang, redirects, and Contentful, Sanity or any JSON as content sources |
 | **Interactivity** | Islands: JS only where you opt in, hydrated when visible, idle, on interaction or on load. Built-in search page (~2 KB) |
+| **Themes** | Install a theme from npm (`theme: 'velocita-theme-paper'`) or write one: CSS, layouts and config defaults your site can still override |
 | **Deploy** | `velocita deploy init` for GitHub Pages, Cloudflare Pages, Netlify and Vercel, with headers and redirects translated per host |
 
 ## Benchmarks
@@ -136,7 +137,8 @@ node bench/bench.mjs 1000,5000 3
 | [Internationalization](https://6t9xstar.github.io/velocita/docs/i18n/) | `content/<lang>/`, hreflang, language switcher |
 | [SEO & GEO](https://6t9xstar.github.io/velocita/docs/seo/) | What is generated and how to tune it |
 | [Deploy](https://6t9xstar.github.io/velocita/docs/deploy/) | Hosts, headers, redirects, Lighthouse CI |
-| [Templates](https://6t9xstar.github.io/velocita/templates/) | `blog`, `docs` and `business` starters |
+| [Themes](https://6t9xstar.github.io/velocita/docs/themes/) | Using and publishing theme packages |
+| [Templates](https://6t9xstar.github.io/velocita/templates/) | `blog`, `docs`, `business`, `news` and `portfolio` starters |
 
 Programmatic use, with types in [`src/index.d.ts`](src/index.d.ts):
 
@@ -153,7 +155,7 @@ Shell completions for bash, zsh, fish and PowerShell are in [`completions/`](com
 bin/          the velocita CLI
 src/          framework source (zero dependencies) + index.d.ts
 templates/    starter sites used by `velocita new`
-packages/     create-velocita (npm create velocita)
+packages/     create-velocita (npm create velocita), velocita-theme-paper (example theme)
 site/         the official website and docs, built with Velocita
 example/      a kitchen-sink example site
 bench/        reproducible Astro vs Velocita benchmark and plans
