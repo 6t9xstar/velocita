@@ -21,13 +21,13 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
-      - name: Build demo site
-        run: node bin/velocita.js build example --clean --strict --check
+      - name: Build official site
+        run: node bin/velocita.js build site --clean --strict --check
         env:
           SITE_URL: https://6t9xstar.github.io/velocita
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: example/dist
+          path: site/dist
   deploy:
     needs: build
     runs-on: ubuntu-latest

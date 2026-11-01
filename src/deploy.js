@@ -3,21 +3,23 @@ import { join } from 'node:path';
 
 export const targets = ['cloudflare', 'netlify', 'vercel', 'github'];
 
-// Lighthouse CI budget: fail CI if any category drops below 95.
+// Lighthouse CI budget: fail CI if any category drops below 95, on every page.
+// Search and tag pages can be noindex by design (Lighthouse's SEO category penalises
+// that), so they are held to every category except SEO. 404.html is skipped.
+const min = { minScore: 0.95 };
+const core = {
+  'categories:performance': ['error', min],
+  'categories:accessibility': ['error', min],
+  'categories:best-practices': ['error', min],
+};
 const lighthouserc = {
   ci: {
-    collect: { staticDistDir: './dist', numberOfRuns: 1 },
+    collect: { staticDistDir: './dist', numberOfRuns: 1, maxAutodiscoverUrls: 0 },
     assert: {
-      // 404.html is deliberately noindex, which Lighthouse's SEO category penalises.
-      assertMatrix: [{
-        matchingUrlPattern: '^(?!.*404\\.html).*$',
-        assertions: {
-          'categories:performance': ['error', { minScore: 0.95 }],
-          'categories:accessibility': ['error', { minScore: 0.95 }],
-          'categories:best-practices': ['error', { minScore: 0.95 }],
-          'categories:seo': ['error', { minScore: 0.95 }],
-        },
-      }],
+      assertMatrix: [
+        { matchingUrlPattern: '^(?!.*(404[.]html|/search/|/tags/)).*$', assertions: { ...core, 'categories:seo': ['error', min] } },
+        { matchingUrlPattern: '/(search|tags)/', assertions: core },
+      ],
     },
   },
 };

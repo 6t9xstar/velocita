@@ -19,7 +19,9 @@
     "test": "node --test --test-concurrency=1",
     "build:example": "node bin/velocita.js build example",
     "dev:example": "node bin/velocita.js dev example",
-    "deploy:demo": "node scripts/deploy-demo.mjs"
+    "deploy:demo": "node scripts/deploy-demo.mjs",
+    "dev:site": "node bin/velocita.js dev site",
+    "build:site": "node bin/velocita.js build site --strict --check"
   },
   "engines": {
     "node": ">=18"

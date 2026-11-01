@@ -136,7 +136,7 @@ export async function build(root = '.', opts = {}) {
     if (!pages.some(p => p.url === `${base}search/`)) pages.push({ title: site.searchTitle?.[lang] || 'Search', url: `${base}search/`, lang, layout: 'search', noindex: true, html: '', toc: [], text: '', type: 'page' });
   }
   const ogCount = await generateOgImages(pages, site, output);
-  const h = { escape: e, date: theme.date, pager: theme.pager, breadcrumbs, layouts: theme.layouts };
+  const h = { escape: e, date: theme.date, pager: theme.pager, breadcrumbs, layouts: theme.layouts, css: theme.siteCss };
   const ctx = { site, pages, articles, sections, tags: tagMap, h };
 
   // 3. Write HTML

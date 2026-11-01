@@ -34,7 +34,7 @@ export const date = (d, lang) => d ? `<time datetime="${d.toISOString().slice(0,
 
 // Minify the theme + site CSS once per build, not once per page.
 let cssCache = [null, ''];
-const siteCss = extra => cssCache[0] === extra ? cssCache[1] : (cssCache = [extra, minifyCss(css + (extra || ''))])[1];
+export const siteCss = extra => cssCache[0] === extra ? cssCache[1] : (cssCache = [extra, minifyCss(css + (extra || ''))])[1];
 
 export const pager = p => !p ? '' : `<nav class="pager" aria-label="Pagination">${p.prev ? `<a href="${p.prev}" rel="prev">← Newer</a>` : ''}${Array.from({ length: p.total }, (_, i) => i + 1).filter(n => n === 1 || n === p.total || Math.abs(n - p.current) <= 2).map((n, i, a) => (i && n - a[i - 1] > 1 ? '<span>…</span>' : '') + (n === p.current ? `<span aria-current="page">${n}</span>` : `<a href="${p.href(n)}">${n}</a>`)).join('')}${p.next ? `<a href="${p.next}" rel="next">Older →</a>` : ''}</nav>`;
 

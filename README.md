@@ -2,7 +2,7 @@
 
 **Sonic-speed, SEO-first static site framework for content websites.**
 
-**Live demo: https://6t9xstar.github.io/velocita/** (English + Hindi, search, islands, feeds, OG images)
+**Live site: https://6t9xstar.github.io/velocita/**: the official Velocita website, built with Velocita (source in [`site/`](site/)). Run it locally with `npm install && npm run dev:site`.
 
 Zero dependencies. Zero JavaScript shipped by default. Every SEO, GEO (AI search) and performance best practice built in — not bolted on as plugins.
 
@@ -22,7 +22,7 @@ npx velocita deploy init github                            # or: netlify, cloudf
 | `docs` | Sidebar ordered by `order`, prev/next, on-page TOC, search; `sections: { docs: { layout: 'docs', type: 'page' } }` |
 | `business` | Hero, service cards, pricing, contact/hours; `LocalBusiness` + `Organization` JSON-LD |
 
-Every template passes `velocita audit` and `velocita check` out of the box, and all three measured **Lighthouse 100 performance, 100 accessibility, 100 best practices, 100 SEO on every content page** (`@lhci/cli` 0.14, desktop Chrome on Windows, local static server; LCP ≈ 0.75 s, CLS 0). The 404 page scores 66 for SEO by design: it is `noindex`.
+Every template passes `velocita audit` and `velocita check` out of the box, and all three measured **Lighthouse 100 performance, 100 accessibility, 100 best practices, 100 SEO on every content page** (`@lhci/cli` 0.14, Lighthouse's default mobile emulation with simulated throttling, Chrome on Windows; LCP ≈ 0.75 s, CLS 0). The 404 page scores 66 for SEO by design: it is `noindex`.
 
 ## Deploy
 

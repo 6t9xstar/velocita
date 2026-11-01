@@ -82,7 +82,9 @@ test('deploy configs for every target; vercel translates headers + redirects', a
     assert.ok(vercel.headers.every(h => !/(?<!\.)\*/.test(h.source)), 'no bare * wildcards');
     assert.deepEqual(vercel.redirects, [{ source: '/old/', destination: '/blog/hello-world/', permanent: true }]);
     const lh = JSON.parse(readFileSync(join(site.dir, 'lighthouserc.json'), 'utf8'));
-    assert.equal(lh.ci.assert.assertMatrix[0].assertions['categories:seo'][1].minScore, 0.95);
+    assert.equal(lh.ci.assert.assertMatrix[0].assertions["categories:seo"][1].minScore, 0.95);
+    assert.ok(!("categories:seo" in lh.ci.assert.assertMatrix[1].assertions), "noindex search/tag pages skip only SEO");
+    assert.equal(lh.ci.collect.maxAutodiscoverUrls, 0, "audit every page, not just 5");
     assert.throws(() => writeDeployConfig(site.dir, 'ftp'), /unknown deploy target/);
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -133,4 +135,19 @@ test('base path: root-relative URLs are prefixed for sites served from a subfold
   } finally {
     rmSync(r.out, { recursive: true, force: true });
   }
+});
+
+test('official site: builds clean, passes audit and budget, islands only on home + search', async () => {
+  const r = await build('site', { ogImages: false });
+  assert.deepEqual(r.warnings, []);
+  assert.deepEqual(r.audit.errors, []);
+  assert.deepEqual(r.audit.warnings, []);
+  const c = checkSite(r.out);
+  assert.deepEqual(c.failures.map(f => `${f.url}: ${f.issues}`), []);
+  const withJs = c.pages.filter(p => p.jsKB > 0).map(p => p.url).sort();
+  assert.deepEqual(withJs, ['/', '/search/']);
+  const home = readFileSync(join(r.out, 'index.html'), 'utf8');
+  const ld = JSON.parse(/<script type="application\/ld\+json">(.*?)<\/script>/.exec(home)[1]);
+  assert.equal(ld['@graph'].find(n => n['@type'] === 'FAQPage').mainEntity.length, 5);
+  assert.equal((home.match(/<details>/g) || []).length, 5, 'visible FAQ matches structured data');
 });
