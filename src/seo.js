@@ -21,11 +21,15 @@ export function seoHead(page, site) {
     `<meta property="og:title" content="${e(page.title || site.title)}">`,
     `<meta property="og:description" content="${e(desc)}">`,
     `<meta property="og:url" content="${canonical}">`,
-    `<meta property="og:locale" content="${e((site.lang || 'en').replace('-', '_'))}">`,
+    `<meta property="og:locale" content="${e((page.lang || site.lang || 'en').replace('-', '_'))}">`,
     `<meta name="twitter:card" content="${image ? 'summary_large_image' : 'summary'}">`,
   ];
   if (site.twitter) tags.push(`<meta name="twitter:site" content="${e(site.twitter)}">`);
-  if (image) tags.push(`<meta property="og:image" content="${abs(site, image)}">`, `<meta name="twitter:image" content="${abs(site, image)}">`);
+  if (image) {
+    tags.push(`<meta property="og:image" content="${abs(site, image)}">`, `<meta name="twitter:image" content="${abs(site, image)}">`);
+    if (page.imageWidth) tags.push(`<meta property="og:image:width" content="${page.imageWidth}">`, `<meta property="og:image:height" content="${page.imageHeight}">`);
+    tags.push(`<meta property="og:image:alt" content="${e(page.imageAlt || page.title || site.title)}">`);
+  }
   if (isArticle && page.date) {
     tags.push(`<meta property="article:published_time" content="${page.date.toISOString()}">`);
     if (page.updated) tags.push(`<meta property="article:modified_time" content="${page.updated.toISOString()}">`);
@@ -38,9 +42,13 @@ export function seoHead(page, site) {
 }
 
 export function jsonLd(page, site, canonical, desc, image) {
-  const org = { '@type': site.organization ? 'Organization' : 'Person', name: site.author || site.title, url: site.url };
-  if (site.logo) org.logo = abs(site, site.logo);
-  const graph = [{ '@type': 'WebSite', '@id': site.url + '#website', url: site.url, name: site.title, description: site.description, inLanguage: site.lang || 'en', publisher: org }];
+  const lang = page.lang || site.lang || 'en';
+  const o = typeof site.organization === 'object' ? site.organization : {};
+  const org = { '@type': site.organization ? 'Organization' : 'Person', '@id': site.url + '#publisher', name: o.name || site.author || site.title, url: site.url };
+  if (o.logo || site.logo) org.logo = abs(site, o.logo || site.logo);
+  if (o.sameAs || site.sameAs) org.sameAs = o.sameAs || site.sameAs;
+  const graph = [{ '@type': 'WebSite', '@id': site.url + '#website', url: site.url, name: site.title, description: site.description, inLanguage: lang, publisher: org }];
+  if (page.url === '/' && site.localBusiness) graph.push(localBusiness(site));
   const crumbs = breadcrumbs(page);
   if (crumbs.length > 1) graph.push({
     '@type': 'BreadcrumbList',
@@ -52,8 +60,23 @@ export function jsonLd(page, site, canonical, desc, image) {
     datePublished: page.date?.toISOString(), dateModified: (page.updated || page.date)?.toISOString(),
     author: { '@type': 'Person', name: page.author || site.author || site.title },
     publisher: org, keywords: (page.tags || []).join(', ') || undefined,
-    wordCount: page.words, image: image ? abs(site, image) : undefined, inLanguage: site.lang || 'en',
+    wordCount: page.words, image: image ? abs(site, image) : undefined, inLanguage: lang,
   });
+  const schema = page.schema;
+  if (schema === 'HowTo' && page.steps) graph.push({
+    '@type': 'HowTo', name: page.title, description: desc, totalTime: page.totalTime, image: image ? abs(site, image) : undefined,
+    step: page.steps.map((s, i) => { const [name, text] = String(s).split('::'); return { '@type': 'HowToStep', position: i + 1, name: name.trim(), text: (text || name).trim() }; }),
+  });
+  if (schema === 'Product') graph.push(clean({
+    '@type': 'Product', name: page.title, description: desc, image: image ? abs(site, image) : undefined, brand: page.brand && { '@type': 'Brand', name: page.brand }, sku: page.sku,
+    offers: page.price != null ? { '@type': 'Offer', price: page.price, priceCurrency: page.currency || 'USD', availability: 'https://schema.org/' + (page.availability || 'InStock'), url: canonical } : undefined,
+    aggregateRating: page.rating ? { '@type': 'AggregateRating', ratingValue: page.rating, reviewCount: page.reviewCount || 1 } : undefined,
+  }));
+  if (page.video) graph.push(clean({
+    '@type': 'VideoObject', name: page.videoTitle || page.title, description: desc, contentUrl: /.(mp4|webm)$/.test(page.video) ? page.video : undefined,
+    embedUrl: /.(mp4|webm)$/.test(page.video) ? undefined : page.video, thumbnailUrl: abs(site, page.videoThumbnail || image || ''),
+    uploadDate: (page.date || new Date()).toISOString(), duration: page.videoDuration,
+  }));
   if (page.faq) graph.push({
     '@type': 'FAQPage',
     mainEntity: page.faq.map(f => { const [q, a] = String(f).split('::'); return { '@type': 'Question', name: q.trim(), acceptedAnswer: { '@type': 'Answer', text: (a || '').trim() } }; }),
@@ -82,4 +105,18 @@ export function lintPage(page) {
   if (/<img(?![^>]*\balt=)[^>]*>|<img[^>]*alt=""/.test(page.html || '')) w.push('image without alt text');
   if ((page.html || '').match(/<h1[\s>]/g)?.length) w.push('h1 inside content (layout already renders h1 from title)');
   return w;
+}
+
+const clean = o => JSON.parse(JSON.stringify(o));
+
+// LocalBusiness from config: { type: 'Restaurant', name, telephone, priceRange, address: { street, city, region, postalCode, country }, geo: { lat, lng }, openingHours: ['Mo-Fr 09:00-18:00'] }
+function localBusiness(site) {
+  const b = site.localBusiness;
+  return clean({
+    '@type': b.type || 'LocalBusiness', '@id': site.url + '#business', name: b.name || site.title, url: site.url,
+    image: b.image ? abs(site, b.image) : site.image ? abs(site, site.image) : undefined, telephone: b.telephone, priceRange: b.priceRange, email: b.email,
+    address: b.address && { '@type': 'PostalAddress', streetAddress: b.address.street, addressLocality: b.address.city, addressRegion: b.address.region, postalCode: b.address.postalCode, addressCountry: b.address.country },
+    geo: b.geo && { '@type': 'GeoCoordinates', latitude: b.geo.lat, longitude: b.geo.lng },
+    openingHours: b.openingHours, sameAs: b.sameAs,
+  });
 }

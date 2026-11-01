@@ -8,6 +8,8 @@ import { minifyHtml } from './minify.js';
 import * as theme from './theme.js';
 import { Output } from './output.js';
 import { createImagePipeline } from './responsive.js';
+import { generateOgImages } from './og.js';
+import { auditSite } from './audit.js';
 
 const walk = dir => !existsSync(dir) ? [] : readdirSync(dir).flatMap(f => {
   const p = join(dir, f);
@@ -52,7 +54,7 @@ export async function build(root = '.', opts = {}) {
   const warnings = [];
   const output = new Output(out, { clean: site.clean });
   const emit = output.emit.bind(output);
-  const images = await createImagePipeline(site, emit);
+  const images = await createImagePipeline(site, output);
 
   // 1. Load + render content
   const pages = [];
@@ -63,7 +65,13 @@ export async function build(root = '.', opts = {}) {
     const rel = relative(contentDir, file).replace(/\\/g, '/');
     const path = rel.replace(/\.(md|markdown|html)$/, '').replace(/(^|\/)index$/, '');
     const url = data.permalink || (path ? `/${path.split('/').map(slugify).join('/')}/` : '/');
-    const section = rel.includes('/') ? rel.split('/')[0] : null;
+    // Multilingual: content/<locale>/... for every locale except the first (default) one.
+    const locales = site.locales || [site.lang];
+    const first = rel.split('/')[0];
+    const lang = locales.slice(1).includes(first) && rel.includes('/') ? first : locales[0];
+    const prefix = lang === locales[0] ? '' : lang + '/';
+    const local = rel.slice(prefix.length);
+    const section = local.includes('/') ? prefix + local.split('/')[0] : null;
     const rendered = file.endsWith('.html')
       ? { html: body, toc: [], text: body.replace(/<[^>]+>/g, ' '), words: 0, readingTime: 1 }
       : renderMarkdown(body, {
@@ -72,13 +80,26 @@ export async function build(root = '.', opts = {}) {
       });
     const date = toDate(data.date) || (section ? statSync(file).mtime : null);
     pages.push({
-      ...data, ...rendered, file, rel, url, section, markdown: body,
+      ...data, ...rendered, file, rel, url, section, markdown: body, lang,
+      translationKey: data.translationKey || local.replace(/.(md|markdown|html)$/, ''),
       date, updated: toDate(data.updated),
-      tags: (data.tags || []).map(t => ({ name: String(t), slug: slugify(t) })),
+      tags: (data.tags || []).map(t => ({ name: String(t), slug: slugify(t), url: `/${prefix}tags/${slugify(t)}/` })),
       type: data.type || (section && date ? 'article' : 'page'),
       layout: data.layout || (section ? 'post' : 'page'),
       excerpt: rendered.text.slice(0, 155).replace(/\s\S*$/, '') + (rendered.text.length > 155 ? '…' : ''),
     });
+  }
+
+  // hreflang clusters: pages sharing a translationKey are translations of each other.
+  if (site.locales?.length > 1) {
+    const groups = {};
+    for (const p of pages) (groups[p.translationKey] ||= []).push(p);
+    for (const group of Object.values(groups)) {
+      if (group.length < 2) continue;
+      const def = group.find(p => p.lang === site.locales[0]) || group[0];
+      const alternates = [...group.map(p => ({ lang: p.lang, url: p.url })), { lang: 'x-default', url: def.url }];
+      for (const p of group) p.alternates = alternates;
+    }
   }
 
   // 2. Collections, tags, section indexes
@@ -86,22 +107,29 @@ export async function build(root = '.', opts = {}) {
   const sections = {};
   for (const a of articles) (sections[a.section] ||= []).push(a);
   for (const [name, items] of Object.entries(sections)) {
-    const idx = pages.find(p => p.url === `/${slugify(name)}/`);
+    const url = `/${name.split('/').map(slugify).join('/')}/`;
+    const label = name.split('/').pop();
+    const lang = items[0].lang;
+    const idx = pages.find(p => p.url === url);
     if (idx) Object.assign(idx, { layout: idx.layout === 'page' || idx.layout === 'post' ? 'list' : idx.layout, items, type: 'page' });
-    else pages.push({ title: name[0].toUpperCase() + name.slice(1), url: `/${slugify(name)}/`, html: '', toc: [], text: '', layout: 'list', items, type: 'page', description: `All ${name} from ${site.title}.` });
+    else pages.push({ title: label[0].toUpperCase() + label.slice(1), url, lang, html: '', toc: [], text: '', layout: 'list', items, type: 'page', description: `All ${label} from ${site.title}.` });
   }
   const tagMap = {};
-  for (const a of articles) for (const t of a.tags) (tagMap[t.slug] ||= { name: t.name, items: [] }).items.push(a);
-  for (const [slug, t] of Object.entries(tagMap)) pages.push({
-    title: `Tagged “${t.name}”`, url: `/tags/${slug}/`, html: '', toc: [], text: '', layout: 'list', items: t.items, type: 'page',
+  for (const a of articles) for (const t of a.tags) (tagMap[t.url] ||= { name: t.name, lang: a.lang, items: [] }).items.push(a);
+  for (const [url, t] of Object.entries(tagMap)) pages.push({
+    title: `Tagged “${t.name}”`, url, lang: t.lang, html: '', toc: [], text: '', layout: 'list', items: t.items, type: 'page',
     description: `${t.items.length} article${t.items.length > 1 ? 's' : ''} about ${t.name} on ${site.title}.`, noindex: t.items.length < 2,
   });
 
   paginate(pages, site);
+  const ogCount = await generateOgImages(pages, site, output);
   const ctx = { site, pages, articles, sections, tags: tagMap };
 
   // 3. Write HTML
-  for (const f of walk(publicDir)) emit(relative(publicDir, f), readFileSync(f));
+  for (const f of walk(publicDir)) {
+    const st = statSync(f);
+    output.emitLazy(relative(publicDir, f), `${st.size}-${st.mtimeMs}`, () => readFileSync(f));
+  }
 
   const prefetch = site.prefetch
     ? `<script type="speculationrules">{"prerender":[{"where":{"href_matches":"/*"},"eagerness":"moderate"}]}</script>`
@@ -109,6 +137,7 @@ export async function build(root = '.', opts = {}) {
   const write = (url, html) => {
     emit(url.endsWith('.html') ? url : url + 'index.html', html);
   };
+  const htmlByUrl = new Map();
   const render = page => {
     const layout = layouts[page.layout] || layouts.page;
     const content = layout({ page, ...ctx });
@@ -120,7 +149,9 @@ export async function build(root = '.', opts = {}) {
 
   for (const page of pages) {
     for (const w of page.rel ? lintPage(page) : []) warnings.push(`${page.rel}: ${w}`);
-    write(page.url, render(page));
+    const html = render(page);
+    htmlByUrl.set(page.url, html);
+    write(page.url, html);
     if (site.markdownMirror && page.markdown) {
       // Clean Markdown copy of every page for AI agents / LLM ingestion.
       const md = `# ${page.title}\n\n${page.description ? `> ${page.description}\n\n` : ''}${page.markdown.trim()}\n`;
@@ -132,8 +163,8 @@ export async function build(root = '.', opts = {}) {
   // 4. SEO / discovery files
   const indexable = pages.filter(p => !p.noindex && !p.draft);
   emit('sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${indexable.map(p => `<url><loc>${site.url}${p.url}</loc>${(p.updated || p.date) ? `<lastmod>${(p.updated || p.date).toISOString().slice(0, 10)}</lastmod>` : ''}</url>`).join('\n')}
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+${indexable.map(p => `<url><loc>${site.url}${p.url}</loc>${(p.alternates || []).map(a => `<xhtml:link rel="alternate" hreflang="${a.lang}" href="${site.url}${a.url}"/>`).join('')}${(p.updated || p.date) ? `<lastmod>${(p.updated || p.date).toISOString().slice(0, 10)}</lastmod>` : ''}</url>`).join('\n')}
 </urlset>`);
 
   const aiBots = ['GPTBot', 'ClaudeBot', 'anthropic-ai', 'Google-Extended', 'CCBot', 'PerplexityBot', 'Bytespider', 'Applebot-Extended'];
@@ -174,9 +205,11 @@ ${articles.slice(0, 50).map(a => `<item><title>${e(a.title)}</title><link>${site
   if (site.indexNowKey) emit(`${site.indexNowKey}.txt`, site.indexNowKey);
 
   await images.flush();
-  const stats = await output.flush();
+  const audit = site.audit === false ? { errors: [], warnings: [], suggestions: [] } : auditSite({ pages, htmlByUrl, files: new Set(output.files.keys()) });
+  const { writtenFiles, ...stats } = await output.flush();
+  const changedUrls = writtenFiles.filter(f => f.endsWith('index.html')).map(f => site.url + '/' + f.replace(/index.html$/, ''));
   const ms = Math.round(performance.now() - t0);
-  return { pages: pages.length + 1, ms, warnings, out, ...stats };
+  return { pages: pages.length + 1, ms, warnings, out, audit, changedUrls, ogImages: ogCount, site, ...stats };
 }
 
 // Split long list pages into /section/page/N/ so no page carries thousands of links.

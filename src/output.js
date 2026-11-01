@@ -22,20 +22,27 @@ export class Output {
     this.files.set(rel.replace(/\\/g, '/').replace(/^\//, ''), data);
   }
 
+  // Emit a file whose content is identified by `key` (e.g. a source hash). If the
+  // previous build wrote the same key, `load` is never called: no read, no hash.
+  emitLazy(rel, key, load) {
+    this.files.set(rel.replace(/\\/g, '/').replace(/^\//, ''), { lazy: true, key: 'k:' + key, load });
+  }
+
   async flush(concurrency = 64) {
     const next = {};
     const todo = [];
+    // The manifest is trusted: use --clean if files in dist/ were changed by hand.
     for (const [rel, data] of this.files) {
-      const h = hash(data);
+      const h = data?.lazy ? data.key : hash(data);
       next[rel] = h;
-      if (this.prev[rel] !== h || !existsSync(join(this.dir, rel))) todo.push([rel, data]);
+      if (this.prev[rel] !== h) todo.push([rel, data]);
     }
     const stale = Object.keys(this.prev).filter(rel => !(rel in next));
 
     const dirs = new Set(todo.map(([rel]) => dirname(join(this.dir, rel))));
     await Promise.all([...dirs].map(d => mkdir(d, { recursive: true })));
     const jobs = [
-      ...todo.map(([rel, data]) => () => writeFile(join(this.dir, rel), data)),
+      ...todo.map(([rel, data]) => async () => writeFile(join(this.dir, rel), data?.lazy ? await data.load() : data)),
       ...stale.map(rel => () => unlink(join(this.dir, rel)).catch(() => {})),
     ];
     let i = 0;
@@ -43,6 +50,6 @@ export class Output {
       while (i < jobs.length) await jobs[i++]();
     }));
     await writeFile(join(this.dir, MANIFEST), JSON.stringify(next));
-    return { written: todo.length, removed: stale.length, unchanged: this.files.size - todo.length };
+    return { writtenFiles: todo.map(([rel]) => rel), written: todo.length, removed: stale.length, unchanged: this.files.size - todo.length };
   }
 }

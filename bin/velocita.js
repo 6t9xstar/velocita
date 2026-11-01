@@ -1,16 +1,33 @@
 #!/usr/bin/env node
 import { build } from '../src/build.js';
 import { dev } from '../src/dev.js';
+import { pingIndexNow } from '../src/indexnow.js';
 import { mkdirSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
-const [cmd = 'help', dir = '.', ...rest] = process.argv.slice(2);
-const flag = n => { const i = rest.indexOf(n); return i >= 0 ? rest[i + 1] : undefined; };
+const args = process.argv.slice(2);
+const flag = n => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : undefined; };
+const has = n => args.includes(n);
+const positional = args.filter((a, i) => !a.startsWith('--') && !(args[i - 1] === '--port'));
+const [cmd = 'help', dir = '.'] = positional;
 
-if (cmd === 'build') {
-  const r = await build(dir, rest.includes('--clean') ? { clean: true } : {});
+if (cmd === 'build' || cmd === 'audit') {
+  const r = await build(dir, has('--clean') ? { clean: true } : {});
   for (const w of r.warnings) console.warn(`⚠ SEO: ${w}`);
-  console.log(`⚡ built ${r.pages} pages in ${r.ms}ms (${r.written} written, ${r.unchanged} unchanged, ${r.removed} removed) → ${r.out}`);
+  for (const w of r.audit.warnings) console.warn(`⚠ audit: ${w}`);
+  for (const e of r.audit.errors) console.error(`✖ audit: ${e}`);
+  if (cmd === 'audit') {
+    for (const s of r.audit.suggestions) console.log(`💡 ${s}`);
+    console.log(`
+${r.audit.errors.length} errors, ${r.audit.warnings.length + r.warnings.length} warnings, ${r.audit.suggestions.length} link suggestions`);
+  } else {
+    console.log(`⚡ built ${r.pages} pages in ${r.ms}ms (${r.written} written, ${r.unchanged} unchanged, ${r.removed} removed${r.ogImages ? `, ${r.ogImages} OG images` : ''}) → ${r.out}`);
+  }
+  if (has('--indexnow')) {
+    const res = await pingIndexNow(r.site, r.changedUrls);
+    console.log(res.skipped ? `IndexNow skipped: ${res.skipped}` : `🔔 IndexNow: submitted ${res.submitted} changed URLs (HTTP ${res.status.join(', ')})`);
+  }
+  if ((has('--strict') || cmd === 'audit') && r.audit.errors.length) process.exit(1);
 } else if (cmd === 'dev') {
   await dev(dir, Number(flag('--port')) || 3000);
 } else if (cmd === 'new') {
@@ -26,5 +43,9 @@ if (cmd === 'build') {
 
   velocita new   [dir]            scaffold a new site
   velocita dev   [dir] [--port N] dev server with live reload
-  velocita build [dir] [--clean]  production build to dist/ (incremental)`);
+  velocita build [dir] [--clean] [--strict] [--indexnow]
+                                  production build to dist/ (incremental)
+                                  --strict    fail on broken links/anchors (CI gate)
+                                  --indexnow  ping IndexNow with changed URLs
+  velocita audit [dir]            full SEO audit incl. internal-link suggestions`);
 }

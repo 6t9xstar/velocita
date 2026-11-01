@@ -18,7 +18,7 @@ faq:
 
 ## Instant navigation
 
-Speculation Rules prerender the next page on hover, so clicks feel *instant*.
+See [how to get cited by AI search](/blog/geo-for-ai-search/#llms-txt). Speculation Rules prerender the next page on hover, so clicks feel *instant*.
 
 ## Summary
 

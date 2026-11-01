@@ -8,7 +8,8 @@ const RASTER = new Set(['.png', '.jpg', '.jpeg', '.webp', '.avif', '.tiff']);
 // Image pipeline:
 // - always: width/height for zero CLS, and images next to Markdown files are copied to /_img/
 // - if the optional `sharp` package is installed: WebP variants + srcset, cached across builds
-export async function createImagePipeline(site, emit) {
+export async function createImagePipeline(site, output) {
+  const emit = output.emit.bind(output);
   let sharp = null;
   if (site.images !== false) {
     try { sharp = (await import('sharp')).default; } catch { /* optional peer dependency */ }
@@ -35,7 +36,7 @@ export async function createImagePipeline(site, emit) {
       const ws = [...new Set([...widths.filter(w => w < dims.width), Math.min(dims.width, Math.max(...widths))])];
       result.srcset = ws.map(w => {
         const out = `/_img/${hash}-${w}.webp`;
-        jobs.set(out, { buf, w, cache: join(cacheDir, `${hash}-${w}.webp`) });
+        jobs.set(out, { buf, w, key: `${hash}-${w}-${site.imageQuality || 78}`, cache: join(cacheDir, `${hash}-${w}.webp`) });
         return `${out} ${w}w`;
       }).join(', ');
       result.sizes = site.imageSizes || '(max-width: 46rem) 100vw, 46rem';
@@ -47,15 +48,12 @@ export async function createImagePipeline(site, emit) {
   async function flush() {
     if (!jobs.size) return;
     mkdirSync(cacheDir, { recursive: true });
-    await Promise.all([...jobs].map(async ([out, { buf, w, cache }]) => {
-      let data;
-      if (existsSync(cache)) data = readFileSync(cache);
-      else {
-        data = await sharp(buf).resize({ width: w, withoutEnlargement: true }).webp({ quality: site.imageQuality || 78 }).toBuffer();
-        writeFileSync(cache, data);
-      }
-      emit(out, data);
-    }));
+    for (const [out, { buf, w, key, cache }] of jobs) output.emitLazy(out, key, async () => {
+      if (existsSync(cache)) return readFileSync(cache);
+      const data = await sharp(buf).resize({ width: w, withoutEnlargement: true }).webp({ quality: site.imageQuality || 78 }).toBuffer();
+      writeFileSync(cache, data);
+      return data;
+    });
   }
 
   return { process, flush, enabled: !!sharp };

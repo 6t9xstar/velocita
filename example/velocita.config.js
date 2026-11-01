@@ -4,6 +4,10 @@ export default {
   url: 'https://velocita.example.com',
   author: 'Velocita Team',
   lang: 'en',
-  nav: [{ title: 'Blog', url: '/blog/' }, { title: 'About', url: '/about/' }],
+  locales: ['en', 'hi'],
+  nav: {
+    en: [{ title: 'Blog', url: '/blog/' }, { title: 'About', url: '/about/' }],
+    hi: [{ title: 'ब्लॉग', url: '/hi/blog/' }, { title: 'परिचय', url: '/hi/about/' }],
+  },
   aiCrawlers: 'allow',
 };

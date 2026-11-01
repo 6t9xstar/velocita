@@ -23,13 +23,17 @@ Goal: the fastest, most search- and AI-discoverable framework for content websit
 - AVIF variants, `<picture>` output, image fingerprinting under `/assets/`
 - Per-layout critical CSS
 
-## 🔜 v0.3 — SEO / GEO depth
-- Auto OG image generation
-- Broken-link checker, internal-link suggestions, orphan-page detection
-- Duplicate title/description detection
-- More schema: HowTo, Product, Organization, LocalBusiness, Review, Video
-- IndexNow auto-ping on deploy
-- Multilingual i18n routing with automatic hreflang clusters
+## ✅ v0.3 — SEO / GEO depth (shipped)
+- Site-wide audit: broken internal links + #anchors, orphan pages, duplicate titles/descriptions, related-article link suggestions; `--strict` CI gate
+- Auto-generated 1200×630 OG images (JPEG, cached, redrawn only when a page's title or date changes)
+- Schema: HowTo, Product (Offer + AggregateRating), VideoObject, Organization (sameAs), LocalBusiness
+- Multilingual routing: `content/<lang>/`, hreflang + x-default, sitemap alternates, language switcher, per-locale nav
+- IndexNow: pings only changed URLs after a build (`--indexnow`)
+
+## 🔜 v0.3.x
+- External link checker (opt-in, network)
+- Per-locale feeds and llms.txt
+- Custom OG templates (layouts/og.js)
 
 ## 🔜 v0.4 — Content platform
 - Zero-JS search (prebuilt index + tiny optional island)

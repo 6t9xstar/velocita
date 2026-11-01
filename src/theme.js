@@ -38,10 +38,16 @@ const siteCss = extra => cssCache[0] === extra ? cssCache[1] : (cssCache = [extr
 
 const pager = p => !p ? '' : `<nav class="pager" aria-label="Pagination">${p.prev ? `<a href="${p.prev}" rel="prev">← Newer</a>` : ''}${Array.from({ length: p.total }, (_, i) => i + 1).filter(n => n === 1 || n === p.total || Math.abs(n - p.current) <= 2).map((n, i, a) => (i && n - a[i - 1] > 1 ? '<span>…</span>' : '') + (n === p.current ? `<span aria-current="page">${n}</span>` : `<a href="${p.href(n)}">${n}</a>`)).join('')}${p.next ? `<a href="${p.next}" rel="next">Older →</a>` : ''}</nav>`;
 
+// Links to the other translations of this page, labelled in their own language.
+const langSwitch = page => (page.alternates || []).filter(a => a.lang !== 'x-default' && a.lang !== page.lang)
+  .map(a => `<a href="${a.url}" hreflang="${a.lang}" lang="${a.lang}">${e(new Intl.DisplayNames([a.lang], { type: 'language' }).of(a.lang))}</a>`).join('');
+
 export function shell({ page, site, head, content }) {
-  const nav = (site.nav || []).map(n => `<a href="${n.url}"${page.url === n.url ? ' aria-current="page"' : ''}>${e(n.title)}</a>`).join('');
+  // nav may be a list, or { en: [...], hi: [...] } per locale.
+  const items = Array.isArray(site.nav) ? site.nav : (site.nav || {})[page.lang || site.lang] || [];
+  const nav = items.map(n => `<a href="${n.url}"${page.url === n.url ? ' aria-current="page"' : ''}>${e(n.title)}</a>`).join('');
   return `<!doctype html>
-<html lang="${e(site.lang || 'en')}">
+<html lang="${e(page.lang || site.lang || 'en')}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -50,7 +56,7 @@ ${head}
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
-<header class="site"><div class="wrap"><a class="brand" href="/">${e(site.title)}</a><nav aria-label="Main">${nav}</nav></div></header>
+<header class="site"><div class="wrap"><a class="brand" href="/">${e(site.title)}</a><nav aria-label="Main">${nav}${langSwitch(page)}</nav></div></header>
 <main id="main" class="wrap">${content}</main>
 <footer class="site"><div class="wrap">© ${new Date().getFullYear()} ${e(site.author || site.title)} · <a href="/feed.xml">RSS</a> · <a href="/sitemap.xml">Sitemap</a></div></footer>
 </body>
@@ -63,11 +69,11 @@ export const layouts = {
   post: ({ page, site }) => {
     const crumbs = breadcrumbs(page).map((c, i, a) => i === a.length - 1 ? `<span aria-current="page">${e(c.name)}</span>` : `<a href="${c.url}">${e(c.name)}</a>`).join(' › ');
     const toc = page.toc.length >= 3 ? `<nav class="toc" aria-label="Table of contents"><strong>On this page</strong><ul>${page.toc.map(t => `<li style="margin-left:${(t.level - 2)}rem"><a href="#${t.id}">${e(t.text)}</a></li>`).join('')}</ul></nav>` : '';
-    const tags = (page.tags || []).map(t => `<a href="/tags/${t.slug}/">#${e(t.name)}</a>`).join('');
+    const tags = (page.tags || []).map(t => `<a href="${t.url}">#${e(t.name)}</a>`).join('');
     return `<nav class="crumbs" aria-label="Breadcrumb">${crumbs}</nav>
 <article>
 <h1>${e(page.title)}</h1>
-<p class="meta">${date(page.date, site.lang)}${page.updated ? ` · Updated ${date(page.updated, site.lang)}` : ''} · ${page.readingTime} min read${page.author ? ` · ${e(page.author)}` : ''}</p>
+<p class="meta">${date(page.date, page.lang || site.lang)}${page.updated ? ` · Updated ${date(page.updated, site.lang)}` : ''} · ${page.readingTime} min read${page.author ? ` · ${e(page.author)}` : ''}</p>
 ${toc}
 ${page.html}
 ${tags ? `<p class="tags">${tags}</p>` : ''}
