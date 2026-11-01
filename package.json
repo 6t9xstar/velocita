@@ -1,18 +1,48 @@
 {
   "name": "velocita",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Zero-dependency, zero-JS-by-default static site framework for content websites. Sonic speed + SEO/GEO built in.",
   "type": "module",
-  "bin": { "velocita": "bin/velocita.js" },
+  "bin": {
+    "velocita": "bin/velocita.js"
+  },
   "main": "src/index.js",
-  "exports": { ".": "./src/index.js" },
-  "files": ["bin", "src"],
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "files": [
+    "bin",
+    "src"
+  ],
   "scripts": {
     "test": "node --test",
     "build:example": "node bin/velocita.js build example",
     "dev:example": "node bin/velocita.js dev example"
   },
-  "engines": { "node": ">=18" },
-  "keywords": ["ssg", "static-site-generator", "seo", "markdown", "fast", "content", "blog", "geo", "llms.txt"],
-  "license": "MIT"
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "ssg",
+    "static-site-generator",
+    "seo",
+    "markdown",
+    "fast",
+    "content",
+    "blog",
+    "geo",
+    "llms.txt"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "sharp": "^0.35.5"
+  },
+  "peerDependencies": {
+    "sharp": ">=0.33"
+  },
+  "peerDependenciesMeta": {
+    "sharp": {
+      "optional": true
+    }
+  }
 }

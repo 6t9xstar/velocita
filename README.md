@@ -6,7 +6,7 @@ Zero dependencies. Zero JavaScript shipped by default. Every SEO, GEO (AI search
 ```bash
 npx github:6t9xstar/velocita new my-site
 npx github:6t9xstar/velocita dev my-site     # live reload at http://localhost:3000
-npx github:6t9xstar/velocita build my-site   # production build → my-site/dist
+npx github:6t9xstar/velocita build my-site   # incremental production build → my-site/dist (add --clean for a full rebuild)
 ```
 
 ## Why Velocita
@@ -26,7 +26,19 @@ npx github:6t9xstar/velocita build my-site   # production build → my-site/dist
 | SEO linter at build time | **built in** | none |
 | Sitemap, RSS, robots, 404, `_headers`, IndexNow key | **built in** | plugins |
 
-Benchmark (Windows laptop, Node 24): **3,000 posts built in ~4.4 s**.
+| Incremental builds | **only changed files are written**; stale files removed | full rewrite |
+| Responsive images | **WebP `srcset` (480/960/1600w)** with optional `sharp`, cached | plugin |
+| Pagination | **automatic** for collections & tags (`pageSize`) | manual |
+
+Benchmark (3,000 posts + 50 tags, Windows laptop, Node 24):
+
+| Build | Time |
+|---|---|
+| Clean (`--clean`) | **2.3 s** |
+| Rebuild, nothing changed | **0.7 s** |
+| Rebuild after editing one post | **0.7 s** (3 files written) |
+
+Optional responsive images: `npm i sharp` in your site and Velocita generates WebP variants automatically. Images placed next to Markdown files (`![alt](photo.jpg)`) are copied and fingerprinted to `/_img/`.
 
 ## Content
 
@@ -75,6 +87,8 @@ export default {
   twitter: '@handle',
   aiCrawlers: 'allow',         // 'allow' | 'search-only' | 'block'
   indexNowKey: '',             // emits /<key>.txt for Bing/Yandex IndexNow
+  pageSize: 20,                // items per collection/tag page (0 = no pagination)
+  imageWidths: [480, 960, 1600], imageQuality: 78, // with sharp installed
   prefetch: true, minify: true, feed: true, llms: true, markdownMirror: true,
   css: '',                     // extra CSS appended to the inlined theme
   head: '',                    // extra tags injected into <head>

@@ -12,11 +12,16 @@ Goal: the fastest, most search- and AI-discoverable framework for content websit
 - Build-time SEO linter, collections, tag pages, 404, `_headers`, IndexNow key
 - Dev server with live reload, `new` scaffolder, programmatic API
 
-## 🔜 v0.2 — Speed
-- Incremental + parallel (worker_threads) builds; content-hash cache
-- Responsive images: AVIF/WebP generation + `srcset` (optional `sharp` peer)
-- Per-layout critical CSS, asset fingerprinting under `/assets/`
-- Pagination for large collections
+## ✅ v0.2 — Speed (shipped)
+- Incremental output: content-hash manifest, only changed files written, stale files removed, parallel I/O (4× faster rebuilds)
+- Responsive images: WebP `srcset` via optional `sharp` peer, cached across builds; co-located images copied + fingerprinted
+- Automatic pagination for collections and tag pages
+- CSS minified once per build; cached date formatters
+
+## 🔜 v0.2.x — Speed, continued
+- Skip re-parsing unchanged Markdown (persistent render cache) and worker_threads rendering
+- AVIF variants, `<picture>` output, image fingerprinting under `/assets/`
+- Per-layout critical CSS
 
 ## 🔜 v0.3 — SEO / GEO depth
 - Auto OG image generation

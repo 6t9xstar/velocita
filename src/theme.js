@@ -1,5 +1,6 @@
 import { escapeHtml as e } from './markdown.js';
 import { breadcrumbs } from './seo.js';
+import { minifyCss } from './minify.js';
 
 // Default theme. ~3KB of CSS, inlined (no render-blocking request), zero JS,
 // system fonts (no font download), dark mode, accessible focus + contrast.
@@ -22,10 +23,20 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid var(--line);pad
 .toc{border:1px solid var(--line);border-radius:6px;padding:.75rem 1rem;font-size:.9rem}.toc ul{margin:0;padding-left:1.1rem}
 .list{list-style:none;padding:0}.list li{padding:1rem 0;border-bottom:1px solid var(--line)}.list h2{margin:0 0 .25rem;font-size:1.25rem}
 .tags a{display:inline-block;margin:0 .4rem .4rem 0;font-size:.8rem;padding:.1rem .5rem;border:1px solid var(--line);border-radius:99px;text-decoration:none}
+.pager{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:2rem}.pager a,.pager span{padding:.2rem .6rem}.pager [aria-current]{font-weight:700}
 footer.site{border-top:1px solid var(--line);color:var(--muted);font-size:.85rem;padding-block:2rem}
 `;
 
-const date = (d, lang) => d ? `<time datetime="${d.toISOString().slice(0, 10)}">${d.toLocaleDateString(lang, { year: 'numeric', month: 'long', day: 'numeric' })}</time>` : '';
+// Intl formatters are expensive to create; build one per language and reuse it.
+const formatters = new Map();
+const fmt = lang => formatters.get(lang) || formatters.set(lang, new Intl.DateTimeFormat(lang, { year: 'numeric', month: 'long', day: 'numeric' })).get(lang);
+const date = (d, lang) => d ? `<time datetime="${d.toISOString().slice(0, 10)}">${fmt(lang).format(d)}</time>` : '';
+
+// Minify the theme + site CSS once per build, not once per page.
+let cssCache = [null, ''];
+const siteCss = extra => cssCache[0] === extra ? cssCache[1] : (cssCache = [extra, minifyCss(css + (extra || ''))])[1];
+
+const pager = p => !p ? '' : `<nav class="pager" aria-label="Pagination">${p.prev ? `<a href="${p.prev}" rel="prev">← Newer</a>` : ''}${Array.from({ length: p.total }, (_, i) => i + 1).filter(n => n === 1 || n === p.total || Math.abs(n - p.current) <= 2).map((n, i, a) => (i && n - a[i - 1] > 1 ? '<span>…</span>' : '') + (n === p.current ? `<span aria-current="page">${n}</span>` : `<a href="${p.href(n)}">${n}</a>`)).join('')}${p.next ? `<a href="${p.next}" rel="next">Older →</a>` : ''}</nav>`;
 
 export function shell({ page, site, head, content }) {
   const nav = (site.nav || []).map(n => `<a href="${n.url}"${page.url === n.url ? ' aria-current="page"' : ''}>${e(n.title)}</a>`).join('');
@@ -35,7 +46,7 @@ export function shell({ page, site, head, content }) {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 ${head}
-<style>${css}${site.css || ''}</style>
+<style>${siteCss(site.css)}</style>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -64,7 +75,8 @@ ${tags ? `<p class="tags">${tags}</p>` : ''}
   },
 
   list: ({ page, site }) => `<h1>${e(page.title)}</h1>${page.html}
-<ul class="list">${page.items.map(p => `<li><h2><a href="${p.url}">${e(p.title)}</a></h2><p class="meta">${date(p.date, site.lang)} · ${p.readingTime} min read</p><p>${e(p.description || p.excerpt)}</p></li>`).join('')}</ul>`,
+<ul class="list">${page.items.map(p => `<li><h2><a href="${p.url}">${e(p.title)}</a></h2><p class="meta">${date(p.date, site.lang)} · ${p.readingTime} min read</p><p>${e(p.description || p.excerpt)}</p></li>`).join('')}</ul>
+${pager(page.pagination)}`,
 
   notFound: () => `<h1>Page not found</h1><p>Sorry, that page doesn’t exist. <a href="/">Go home</a>.</p>`,
 };

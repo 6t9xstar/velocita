@@ -8,9 +8,9 @@ const [cmd = 'help', dir = '.', ...rest] = process.argv.slice(2);
 const flag = n => { const i = rest.indexOf(n); return i >= 0 ? rest[i + 1] : undefined; };
 
 if (cmd === 'build') {
-  const r = await build(dir);
+  const r = await build(dir, rest.includes('--clean') ? { clean: true } : {});
   for (const w of r.warnings) console.warn(`⚠ SEO: ${w}`);
-  console.log(`⚡ built ${r.pages} pages in ${r.ms}ms → ${r.out}`);
+  console.log(`⚡ built ${r.pages} pages in ${r.ms}ms (${r.written} written, ${r.unchanged} unchanged, ${r.removed} removed) → ${r.out}`);
 } else if (cmd === 'dev') {
   await dev(dir, Number(flag('--port')) || 3000);
 } else if (cmd === 'new') {
@@ -26,5 +26,5 @@ if (cmd === 'build') {
 
   velocita new   [dir]            scaffold a new site
   velocita dev   [dir] [--port N] dev server with live reload
-  velocita build [dir]            production build to dist/`);
+  velocita build [dir] [--clean]  production build to dist/ (incremental)`);
 }

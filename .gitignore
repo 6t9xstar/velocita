@@ -2,3 +2,5 @@ node_modules/
 dist/
 example/dist/
 *.log
+bench-site/
+.velocita-cache/

@@ -23,8 +23,8 @@ export function renderMarkdown(md, opts = {}) {
     text = escapeHtml(text);
     text = text.replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+&quot;([^&]*)&quot;)?\)/g, (_, alt, src, title) => {
       const first = imgCount++ === 0 && opts.eagerFirstImage !== false;
-      const dims = (opts.imageSize && opts.imageSize(src)) || null;
-      return `<img src="${src}" alt="${alt}"${title ? ` title="${title}"` : ''}${dims ? ` width="${dims.width}" height="${dims.height}"` : ''}${first ? ' fetchpriority="high"' : ' loading="lazy"'} decoding="async">`;
+      const img = (opts.image && opts.image(src)) || { src };
+      return `<img src="${img.src}"${img.srcset ? ` srcset="${img.srcset}" sizes="${img.sizes}"` : ''} alt="${alt}"${title ? ` title="${title}"` : ''}${img.width ? ` width="${img.width}" height="${img.height}"` : ''}${first ? ' fetchpriority="high"' : ' loading="lazy"'} decoding="async">`;
     });
     text = text.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, label, href) => {
       const ext = /^https?:\/\//.test(href) && !(opts.siteUrl && href.startsWith(opts.siteUrl));

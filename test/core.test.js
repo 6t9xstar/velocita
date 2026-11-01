@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, rmSync } from 'node:fs';
 import { renderMarkdown, parseFrontmatter, minifyHtml, build } from '../src/index.js';
 
 test('frontmatter parses scalars, arrays, lists', () => {
@@ -38,4 +38,30 @@ test('example site builds with all SEO artifacts', async () => {
     assert.ok(post.includes(s), s);
   assert.doesNotMatch(post, /<script(?! type="(application\/ld\+json|speculationrules)")/);
   assert.deepEqual(r.warnings, []);
+});
+
+test('responsive images: copied, sized, srcset', async () => {
+  const r = await build('example');
+  const html = readFileSync(`${r.out}/blog/geo-for-ai-search/index.html`, 'utf8');
+  const img = /<img[^>]+>/.exec(html)[0];
+  assert.match(img, /src="\/_img\/[0-9a-f]{8}-hero\.jpg"/);
+  assert.match(img, /width="2000" height="1000"/);
+  assert.match(img, /fetchpriority="high"/);
+  assert.match(img, /srcset="[^"]*480w[^"]*960w[^"]*1600w"/);
+  for (const [, file] of img.matchAll(/(\/_img\/[0-9a-f]{8}-\d+\.webp)/g)) assert.ok(existsSync(r.out + file), file);
+});
+
+test('incremental: second build writes nothing', async () => {
+  await build('example', { clean: true });
+  const again = await build('example');
+  assert.equal(again.written, 0);
+  assert.equal(again.removed, 0);
+});
+
+test('pagination splits long lists', async () => {
+  const r = await build('example', { pageSize: 1, outDir: 'dist-paged', clean: true });
+  assert.ok(existsSync(`${r.out}/blog/page/2/index.html`));
+  const first = readFileSync(`${r.out}/blog/index.html`, 'utf8');
+  assert.match(first, /rel="next"/);
+  rmSync(r.out, { recursive: true, force: true });
 });

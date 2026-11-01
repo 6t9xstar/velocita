@@ -1,12 +1,13 @@
-import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync, readdirSync, statSync, cpSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { join, relative, dirname, extname, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseFrontmatter } from './frontmatter.js';
 import { renderMarkdown, slugify, escapeHtml as e } from './markdown.js';
 import { seoHead, lintPage } from './seo.js';
 import { minifyHtml } from './minify.js';
-import { imageSize } from './images.js';
 import * as theme from './theme.js';
+import { Output } from './output.js';
+import { createImagePipeline } from './responsive.js';
 
 const walk = dir => !existsSync(dir) ? [] : readdirSync(dir).flatMap(f => {
   const p = join(dir, f);
@@ -21,7 +22,7 @@ export async function loadConfig(root) {
   return {
     title: 'My Site', description: '', url: 'http://localhost:3000', lang: 'en',
     contentDir: 'content', publicDir: 'public', outDir: 'dist', layoutsDir: 'layouts',
-    minify: true, prefetch: true, drafts: false, feed: true, llms: true, markdownMirror: true,
+    minify: true, pageSize: 20, prefetch: true, drafts: false, feed: true, llms: true, markdownMirror: true,
     aiCrawlers: 'allow', // 'allow' | 'block' | 'search-only'
     ...user,
   };
@@ -42,12 +43,16 @@ export async function build(root = '.', opts = {}) {
   root = resolve(root);
   const site = { ...(await loadConfig(root)), ...opts };
   site.url = site.url.replace(/\/$/, '');
+  site.root = root;
   const layouts = await loadLayouts(root, site);
   const shell = layouts.shell || theme.shell;
   const contentDir = join(root, site.contentDir);
   const publicDir = join(root, site.publicDir);
   const out = join(root, site.outDir);
   const warnings = [];
+  const output = new Output(out, { clean: site.clean });
+  const emit = output.emit.bind(output);
+  const images = await createImagePipeline(site, emit);
 
   // 1. Load + render content
   const pages = [];
@@ -63,7 +68,7 @@ export async function build(root = '.', opts = {}) {
       ? { html: body, toc: [], text: body.replace(/<[^>]+>/g, ' '), words: 0, readingTime: 1 }
       : renderMarkdown(body, {
         siteUrl: site.url,
-        imageSize: src => src.startsWith('/') ? imageSize(join(publicDir, src)) : imageSize(join(dirname(file), src)),
+        image: src => images.process(src, src.startsWith('/') ? join(publicDir, src) : join(dirname(file), src)),
       });
     const date = toDate(data.date) || (section ? statSync(file).mtime : null);
     pages.push({
@@ -92,20 +97,17 @@ export async function build(root = '.', opts = {}) {
     description: `${t.items.length} article${t.items.length > 1 ? 's' : ''} about ${t.name} on ${site.title}.`, noindex: t.items.length < 2,
   });
 
+  paginate(pages, site);
   const ctx = { site, pages, articles, sections, tags: tagMap };
 
   // 3. Write HTML
-  rmSync(out, { recursive: true, force: true });
-  mkdirSync(out, { recursive: true });
-  if (existsSync(publicDir)) cpSync(publicDir, out, { recursive: true });
+  for (const f of walk(publicDir)) emit(relative(publicDir, f), readFileSync(f));
 
   const prefetch = site.prefetch
     ? `<script type="speculationrules">{"prerender":[{"where":{"href_matches":"/*"},"eagerness":"moderate"}]}</script>`
     : '';
   const write = (url, html) => {
-    const target = url.endsWith('.html') ? join(out, url) : join(out, url, 'index.html');
-    mkdirSync(dirname(target), { recursive: true });
-    writeFileSync(target, html);
+    emit(url.endsWith('.html') ? url : url + 'index.html', html);
   };
   const render = page => {
     const layout = layouts[page.layout] || layouts.page;
@@ -122,16 +124,14 @@ export async function build(root = '.', opts = {}) {
     if (site.markdownMirror && page.markdown) {
       // Clean Markdown copy of every page for AI agents / LLM ingestion.
       const md = `# ${page.title}\n\n${page.description ? `> ${page.description}\n\n` : ''}${page.markdown.trim()}\n`;
-      const target = page.url === '/' ? join(out, 'index.md') : join(out, page.url.replace(/\/$/, '') + '.md');
-      mkdirSync(dirname(target), { recursive: true });
-      writeFileSync(target, md);
+      emit(page.url === '/' ? 'index.md' : page.url.replace(/\/$/, '') + '.md', md);
     }
   }
   write('/404.html', render({ title: 'Page not found', url: '/404/', layout: 'notFound', noindex: true, html: '', toc: [] }));
 
   // 4. SEO / discovery files
   const indexable = pages.filter(p => !p.noindex && !p.draft);
-  writeFileSync(join(out, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>
+  emit('sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${indexable.map(p => `<url><loc>${site.url}${p.url}</loc>${(p.updated || p.date) ? `<lastmod>${(p.updated || p.date).toISOString().slice(0, 10)}</lastmod>` : ''}</url>`).join('\n')}
 </urlset>`);
@@ -139,10 +139,10 @@ ${indexable.map(p => `<url><loc>${site.url}${p.url}</loc>${(p.updated || p.date)
   const aiBots = ['GPTBot', 'ClaudeBot', 'anthropic-ai', 'Google-Extended', 'CCBot', 'PerplexityBot', 'Bytespider', 'Applebot-Extended'];
   const trainingBots = ['GPTBot', 'anthropic-ai', 'Google-Extended', 'CCBot', 'Bytespider', 'Applebot-Extended'];
   const blocked = site.aiCrawlers === 'block' ? aiBots : site.aiCrawlers === 'search-only' ? trainingBots : [];
-  writeFileSync(join(out, 'robots.txt'),
+  emit('robots.txt',
     `User-agent: *\nAllow: /\n${blocked.map(b => `\nUser-agent: ${b}\nDisallow: /`).join('\n')}\n\nSitemap: ${site.url}/sitemap.xml\n`);
 
-  if (site.feed) writeFileSync(join(out, 'feed.xml'), `<?xml version="1.0" encoding="UTF-8"?>
+  if (site.feed) emit('feed.xml', `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel>
 <title>${e(site.title)}</title><link>${site.url}/</link><description>${e(site.description)}</description><language>${site.lang}</language>
 <atom:link href="${site.url}/feed.xml" rel="self" type="application/rss+xml"/>
@@ -153,15 +153,15 @@ ${articles.slice(0, 50).map(a => `<item><title>${e(a.title)}</title><link>${site
     const line = p => `- [${p.title}](${site.url}${p.url === '/' ? '/index.md' : p.url.replace(/\/$/, '') + '.md'})${p.description ? `: ${p.description}` : ''}`;
     const groups = Object.entries(sections).map(([n, items]) => `## ${n[0].toUpperCase() + n.slice(1)}\n\n${items.map(line).join('\n')}`);
     const loose = indexable.filter(p => p.rel && !p.section);
-    writeFileSync(join(out, 'llms.txt'), `# ${site.title}\n\n> ${site.description}\n\n${loose.length ? `## Pages\n\n${loose.map(line).join('\n')}\n\n` : ''}${groups.join('\n\n')}\n`);
-    writeFileSync(join(out, 'llms-full.txt'), indexable.filter(p => p.markdown).map(p => `# ${p.title}\nURL: ${site.url}${p.url}\n\n${p.markdown.trim()}`).join('\n\n---\n\n'));
+    emit('llms.txt', `# ${site.title}\n\n> ${site.description}\n\n${loose.length ? `## Pages\n\n${loose.map(line).join('\n')}\n\n` : ''}${groups.join('\n\n')}\n`);
+    emit('llms-full.txt', indexable.filter(p => p.markdown).map(p => `# ${p.title}\nURL: ${site.url}${p.url}\n\n${p.markdown.trim()}`).join('\n\n---\n\n'));
   }
 
   // Client-side search index (optional to use; costs nothing if unused).
-  writeFileSync(join(out, 'search-index.json'), JSON.stringify(indexable.filter(p => p.rel).map(p => ({ t: p.title, u: p.url, d: p.description || p.excerpt, k: p.tags?.map(t => t.name) }))));
+  emit('search-index.json', JSON.stringify(indexable.filter(p => p.rel).map(p => ({ t: p.title, u: p.url, d: p.description || p.excerpt, k: p.tags?.map(t => t.name) }))));
 
   // Host config: long-lived caching for assets + security headers (Netlify / Cloudflare Pages format).
-  writeFileSync(join(out, '_headers'), `/*
+  emit('_headers', `/*
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   X-Frame-Options: SAMEORIGIN
@@ -171,8 +171,28 @@ ${articles.slice(0, 50).map(a => `<item><title>${e(a.title)}</title><link>${site
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
 `);
-  if (site.indexNowKey) writeFileSync(join(out, `${site.indexNowKey}.txt`), site.indexNowKey);
+  if (site.indexNowKey) emit(`${site.indexNowKey}.txt`, site.indexNowKey);
 
+  await images.flush();
+  const stats = await output.flush();
   const ms = Math.round(performance.now() - t0);
-  return { pages: pages.length + 1, ms, warnings, out };
+  return { pages: pages.length + 1, ms, warnings, out, ...stats };
+}
+
+// Split long list pages into /section/page/N/ so no page carries thousands of links.
+function paginate(pages, site) {
+  const size = site.pageSize;
+  if (!size) return;
+  for (const p of [...pages]) {
+    if (p.layout !== 'list' || !p.items || p.items.length <= size) continue;
+    const all = p.items;
+    const total = Math.ceil(all.length / size);
+    const href = n => (n === 1 ? p.url : `${p.url}page/${n}/`);
+    for (let n = 1; n <= total; n++) {
+      const pagination = { current: n, total, prev: n > 1 ? href(n - 1) : null, next: n < total ? href(n + 1) : null, href };
+      const items = all.slice((n - 1) * size, n * size);
+      if (n === 1) Object.assign(p, { items, pagination });
+      else pages.push({ ...p, rel: undefined, markdown: undefined, html: '', items, pagination, url: href(n), title: `${p.title} – Page ${n}` });
+    }
+  }
 }

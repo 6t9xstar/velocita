@@ -5,6 +5,8 @@ date: 2026-10-28
 tags: [seo, ai]
 ---
 
+![Velocita hero banner](hero.jpg)
+
 ## llms.txt
 
 Velocita generates `/llms.txt` and `/llms-full.txt` automatically.
