@@ -1,6 +1,6 @@
 {
   "name": "velocita",
-  "version": "0.4.0",
+  "version": "1.0.0",
   "description": "Zero-dependency, zero-JS-by-default static site framework for content websites. Sonic speed + SEO/GEO built in.",
   "type": "module",
   "bin": {
@@ -12,7 +12,8 @@
   },
   "files": [
     "bin",
-    "src"
+    "src",
+    "templates"
   ],
   "scripts": {
     "test": "node --test --test-concurrency=1",
@@ -44,5 +45,10 @@
     "sharp": {
       "optional": true
     }
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/6t9xstar/velocita.git"
+  },
+  "homepage": "https://github.com/6t9xstar/velocita#readme"
 }

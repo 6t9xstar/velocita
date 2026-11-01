@@ -30,13 +30,13 @@ footer.site{border-top:1px solid var(--line);color:var(--muted);font-size:.85rem
 // Intl formatters are expensive to create; build one per language and reuse it.
 const formatters = new Map();
 const fmt = lang => formatters.get(lang) || formatters.set(lang, new Intl.DateTimeFormat(lang, { year: 'numeric', month: 'long', day: 'numeric' })).get(lang);
-const date = (d, lang) => d ? `<time datetime="${d.toISOString().slice(0, 10)}">${fmt(lang).format(d)}</time>` : '';
+export const date = (d, lang) => d ? `<time datetime="${d.toISOString().slice(0, 10)}">${fmt(lang).format(d)}</time>` : '';
 
 // Minify the theme + site CSS once per build, not once per page.
 let cssCache = [null, ''];
 const siteCss = extra => cssCache[0] === extra ? cssCache[1] : (cssCache = [extra, minifyCss(css + (extra || ''))])[1];
 
-const pager = p => !p ? '' : `<nav class="pager" aria-label="Pagination">${p.prev ? `<a href="${p.prev}" rel="prev">← Newer</a>` : ''}${Array.from({ length: p.total }, (_, i) => i + 1).filter(n => n === 1 || n === p.total || Math.abs(n - p.current) <= 2).map((n, i, a) => (i && n - a[i - 1] > 1 ? '<span>…</span>' : '') + (n === p.current ? `<span aria-current="page">${n}</span>` : `<a href="${p.href(n)}">${n}</a>`)).join('')}${p.next ? `<a href="${p.next}" rel="next">Older →</a>` : ''}</nav>`;
+export const pager = p => !p ? '' : `<nav class="pager" aria-label="Pagination">${p.prev ? `<a href="${p.prev}" rel="prev">← Newer</a>` : ''}${Array.from({ length: p.total }, (_, i) => i + 1).filter(n => n === 1 || n === p.total || Math.abs(n - p.current) <= 2).map((n, i, a) => (i && n - a[i - 1] > 1 ? '<span>…</span>' : '') + (n === p.current ? `<span aria-current="page">${n}</span>` : `<a href="${p.href(n)}">${n}</a>`)).join('')}${p.next ? `<a href="${p.next}" rel="next">Older →</a>` : ''}</nav>`;
 
 // Links to the other translations of this page, labelled in their own language.
 const langSwitch = page => (page.alternates || []).filter(a => a.lang !== 'x-default' && a.lang !== page.lang)
@@ -51,6 +51,7 @@ export function shell({ page, site, head, content }) {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+${site.faviconHref ? `<link rel="icon" href="${site.faviconHref}">` : ''}
 ${head}
 <style>${siteCss(site.css)}</style>
 </head>
@@ -58,7 +59,7 @@ ${head}
 <a class="skip" href="#main">Skip to content</a>
 <header class="site"><div class="wrap"><a class="brand" href="/">${e(site.title)}</a><nav aria-label="Main">${nav}${langSwitch(page)}</nav></div></header>
 <main id="main" class="wrap">${content}</main>
-<footer class="site"><div class="wrap">© ${new Date().getFullYear()} ${e(site.author || site.title)} · <a href="${page.feedBase || '/'}feed.xml">RSS</a> · <a href="/sitemap.xml">Sitemap</a></div></footer>
+<footer class="site"><div class="wrap">© ${new Date().getFullYear()} ${e(site.author || site.title)} ·${site.feed ? ` <a href="${page.feedBase || '/'}feed.xml">RSS</a> ·` : ''} <a href="/sitemap.xml">Sitemap</a></div></footer>
 </body>
 </html>`;
 }

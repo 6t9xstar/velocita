@@ -47,7 +47,17 @@ Goal: the fastest, most search- and AI-discoverable framework for content websit
 - Nested frontmatter (YAML objects)
 - Per-locale llms.txt
 
-## 🔜 v1.0 — Ecosystem
-- Starter templates: blog, docs, news, agency, local business
-- One-command deploy: Cloudflare Pages, Netlify, Vercel, GitHub Pages
-- Lighthouse CI gate: build fails below a configurable score
+## ✅ v1.0 — Ecosystem (shipped)
+- Starter templates: blog, docs (sidebar + prev/next), local business (LocalBusiness schema)
+- `velocita deploy init` for Cloudflare Pages, Netlify, Vercel (headers/redirects translated) and GitHub Pages (Actions workflow)
+- `velocita deploy <target>`: build, audit, budget check, then publish with the provider's CLI
+- Lighthouse CI gate (`lighthouserc.json`, 95+ in every category) wired into the GitHub workflow
+- `velocita check`: browser-free performance budget and Core Web Vitals hazard check
+- Auto-generated favicon (no `/favicon.ico` 404s)
+- Layout helpers (`h.escape`, `h.date`, `h.pager`) and per-section layout/type config
+
+## 🔜 Next
+- Publish to npm (`npm i velocita`)
+- More templates: news/magazine, agency/portfolio
+- Theme packages that can be shared on npm
+- `velocita new` interactive prompts

@@ -1,0 +1,14 @@
+{
+  "name": "{{name}}",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "velocita dev",
+    "build": "velocita build --strict",
+    "audit": "velocita audit",
+    "check": "velocita check"
+  },
+  "dependencies": {
+    "velocita": "github:6t9xstar/velocita"
+  }
+}

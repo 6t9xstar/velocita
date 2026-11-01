@@ -4,10 +4,42 @@
 Zero dependencies. Zero JavaScript shipped by default. Every SEO, GEO (AI search) and performance best practice built in — not bolted on as plugins.
 
 ```bash
-npx github:6t9xstar/velocita new my-site
-npx github:6t9xstar/velocita dev my-site     # live reload at http://localhost:3000
-npx github:6t9xstar/velocita build my-site   # incremental production build → my-site/dist (add --clean for a full rebuild)
+npx github:6t9xstar/velocita new my-site --template blog   # or: docs, business
+cd my-site
+npm install
+npm run dev                                                # live reload at http://localhost:3000
+npx velocita deploy init github                            # or: netlify, cloudflare, vercel
 ```
+
+## Starter templates
+
+| Template | What you get |
+|---|---|
+| `blog` | Home, about, blog with tags, feeds, search, FAQ schema example |
+| `docs` | Sidebar ordered by `order`, prev/next, on-page TOC, search; `sections: { docs: { layout: 'docs', type: 'page' } }` |
+| `business` | Hero, service cards, pricing, contact/hours; `LocalBusiness` + `Organization` JSON-LD |
+
+Every template passes `velocita audit` and `velocita check` out of the box, and all three measured **Lighthouse 100 performance, 100 accessibility, 100 best practices, 100 SEO on every content page** (`@lhci/cli` 0.14, desktop Chrome on Windows, local static server; LCP ≈ 0.75 s, CLS 0). The 404 page scores 66 for SEO by design: it is `noindex`.
+
+## Deploy
+
+```bash
+velocita deploy init cloudflare   # wrangler.toml          (reads _headers/_redirects natively)
+velocita deploy init netlify      # netlify.toml           (reads _headers/_redirects natively)
+velocita deploy init vercel       # vercel.json            (headers + redirects translated from the build)
+velocita deploy init github       # GitHub Actions → Pages, with a Lighthouse CI gate
+velocita deploy cloudflare        # build → audit → budget check → publish with the provider's CLI
+```
+
+Every `init` also writes `lighthouserc.json`: CI fails if performance, accessibility, best practices or SEO drop below 95 on any page.
+
+## Performance budget
+
+```bash
+velocita check                    # or: velocita build --check
+```
+
+Checks every built page in milliseconds, without a browser: gzipped HTML / JS / CSS weight against a budget (`budget: { htmlKB: 30, jsKB: 20, cssKB: 20 }`), render-blocking stylesheets and scripts, images without dimensions (CLS), a lazy-loaded first image (LCP), and missing `lang` / viewport.
 
 ## Why Velocita
 

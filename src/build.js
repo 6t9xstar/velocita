@@ -3,7 +3,7 @@ import { join, relative, dirname, extname, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseFrontmatter } from './frontmatter.js';
 import { renderMarkdown, slugify, escapeHtml as e } from './markdown.js';
-import { seoHead, lintPage } from './seo.js';
+import { seoHead, lintPage, breadcrumbs } from './seo.js';
 import { minifyHtml } from './minify.js';
 import * as theme from './theme.js';
 import { Output } from './output.js';
@@ -91,8 +91,8 @@ export async function build(root = '.', opts = {}) {
       translationKey: data.translationKey || local.replace(/\.(md|markdown|html)$/, ''),
       date, updated: toDate(data.updated),
       tags: (data.tags || []).map(t => ({ name: String(t), slug: slugify(t), url: `/${prefix}tags/${slugify(t)}/` })),
-      type: data.type || (section && date ? 'article' : 'page'),
-      layout: data.layout || (section ? 'post' : 'page'),
+      type: data.type || site.sections?.[local.split('/')[0]]?.type || (section && date ? 'article' : 'page'),
+      layout: data.layout || site.sections?.[local.split('/')[0]]?.layout || (section ? 'post' : 'page'),
       excerpt: rendered.text.slice(0, 155).replace(/\s\S*$/, '') + (rendered.text.length > 155 ? '…' : ''),
     });
   }
@@ -134,9 +134,20 @@ export async function build(root = '.', opts = {}) {
     if (!pages.some(p => p.url === `${base}search/`)) pages.push({ title: site.searchTitle?.[lang] || 'Search', url: `${base}search/`, lang, layout: 'search', noindex: true, html: '', toc: [], text: '', type: 'page' });
   }
   const ogCount = await generateOgImages(pages, site, output);
-  const ctx = { site, pages, articles, sections, tags: tagMap };
+  const h = { escape: e, date: theme.date, pager: theme.pager, breadcrumbs, layouts: theme.layouts };
+  const ctx = { site, pages, articles, sections, tags: tagMap, h };
 
   // 3. Write HTML
+  // Favicon: use public/favicon.(svg|ico|png) if present, else generate a lettermark so
+  // browsers never hit a 404 on /favicon.ico (a Lighthouse best-practices failure).
+  const ownIcon = ['favicon.svg', 'favicon.png', 'favicon.ico'].find(f => existsSync(join(publicDir, f)));
+  if (site.favicon !== false) {
+    site.faviconHref = site.favicon || (ownIcon ? `/${ownIcon}` : '/favicon.svg');
+    if (!site.favicon && !ownIcon) {
+      const { accent = '#0b57d0' } = site.og || {};
+      emit('favicon.svg', `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="${accent}"/><text x="32" y="44" font-family="system-ui,sans-serif" font-size="36" font-weight="700" fill="#fff" text-anchor="middle">${e(String(site.title).trim()[0] || 'V').toUpperCase()}</text></svg>`);
+    }
+  }
   for (const f of walk(publicDir)) {
     const st = statSync(f);
     output.emitLazy(relative(publicDir, f), `${st.size}-${st.mtimeMs}`, () => readFileSync(f));
