@@ -13,6 +13,7 @@ import { auditSite } from './audit.js';
 import { writeFeeds } from './feeds.js';
 import { writeRedirects } from './redirects.js';
 import { collectIslands } from './islands.js';
+import { basePath, withBase } from './base.js';
 
 const walk = dir => !existsSync(dir) ? [] : readdirSync(dir).flatMap(f => {
   const p = join(dir, f);
@@ -49,6 +50,7 @@ export async function build(root = '.', opts = {}) {
   const site = { ...(await loadConfig(root)), ...opts };
   site.url = site.url.replace(/\/$/, '');
   site.root = root;
+  site.base = site.dev ? '' : basePath(site.url);
   const layouts = await loadLayouts(root, site);
   const shell = layouts.shell || theme.shell;
   const contentDir = join(root, site.contentDir);
@@ -157,7 +159,7 @@ export async function build(root = '.', opts = {}) {
     ? `<script type="speculationrules">{"prerender":[{"where":{"href_matches":"/*"},"eagerness":"moderate"}]}</script>`
     : '';
   const write = (url, html) => {
-    emit(url.endsWith('.html') ? url : url + 'index.html', html);
+    emit(url.endsWith('.html') ? url : url + 'index.html', withBase(html, site.base));
   };
   const islands = collectIslands(site, emit);
   const feedMap = writeFeeds({ site, articles, sections, tags: tagMap, emit });
@@ -199,7 +201,7 @@ ${indexable.map(p => `<url><loc>${site.url}${p.url}</loc>${(p.alternates || []).
   emit('robots.txt',
     `User-agent: *\nAllow: /\n${blocked.map(b => `\nUser-agent: ${b}\nDisallow: /`).join('\n')}\n\nSitemap: ${site.url}/sitemap.xml\n`);
 
-  const redirects = writeRedirects({ site, pages, emit });
+  const redirects = writeRedirects({ site, pages, emit: (f, c) => emit(f, f.endsWith('.html') ? withBase(c, site.base) : c) });
   warnings.push(...redirects.conflicts);
 
   if (site.llms) {

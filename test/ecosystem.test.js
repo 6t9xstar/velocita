@@ -107,3 +107,30 @@ test('check: flags heavy pages, render-blocking resources and CWV hazards', () =
     rmSync(out, { recursive: true, force: true });
   }
 });
+
+test('base path: root-relative URLs are prefixed for sites served from a subfolder', async () => {
+  const { withBase, basePath } = await import('../src/base.js');
+  assert.equal(basePath('https://user.github.io/repo/'), '/repo');
+  assert.equal(basePath('https://example.com'), '');
+  const html = '<a href="/blog/">b</a><a href="//cdn.x/y">c</a><a href="https://x.com/">d</a><a href="#top">e</a><img src="/a.jpg" srcset="/a-480.webp 480w, /a-960.webp 960w"><script>const m={"c":"/_islands/c.1.js"}</script><meta http-equiv="refresh" content="0; url=/new/">';
+  const out = withBase(html, '/repo');
+  assert.match(out, /href="\/repo\/blog\/"/);
+  assert.match(out, /href="\/\/cdn\.x\/y"/);
+  assert.match(out, /href="https:\/\/x\.com\/"/);
+  assert.match(out, /href="#top"/);
+  assert.match(out, /src="\/repo\/a\.jpg"/);
+  assert.match(out, /srcset="\/repo\/a-480\.webp 480w, \/repo\/a-960\.webp 960w"/);
+  assert.match(out, /"\/repo\/_islands\/c\.1\.js"/);
+  assert.match(out, /url=\/repo\/new\//);
+  assert.equal(withBase(html, ''), html);
+
+  const r = await build('example', { url: 'https://user.github.io/repo', outDir: 'dist-base', clean: true, ogImages: false });
+  try {
+    const page = readFileSync(join(r.out, 'blog/index.html'), 'utf8');
+    assert.match(page, /<link rel="canonical" href="https:\/\/user\.github\.io\/repo\/blog\/">/);
+    assert.doesNotMatch(page, /\s(href|src)="\/(?!repo\/|\/)/);
+    assert.deepEqual(r.audit.errors, []);
+  } finally {
+    rmSync(r.out, { recursive: true, force: true });
+  }
+});

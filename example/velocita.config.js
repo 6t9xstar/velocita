@@ -3,7 +3,8 @@ import { fromJson } from '../src/index.js';
 export default {
   title: 'Velocita Demo',
   description: 'Demo content site built with Velocita: zero JS, perfect SEO, instant navigation.',
-  url: 'https://velocita.example.com',
+  // CI sets SITE_URL for the live GitHub Pages demo; tests use the default.
+  url: process.env.SITE_URL || 'https://velocita.example.com',
   author: 'Velocita Team',
   lang: 'en',
   locales: ['en', 'hi'],

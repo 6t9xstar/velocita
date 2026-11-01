@@ -13,7 +13,10 @@ export default async function search(el, { placeholder = 'Search…', empty = 'N
   el.append(out);
   if (input) input.placeholder = placeholder;
 
-  const index = (await (await fetch('/search-index.json')).json())
+  // This module lives at <base>/_islands/, so the site root is one level up.
+  const root = new URL('../', import.meta.url);
+  const base = root.pathname.replace(/\/$/, '');
+  const index = (await (await fetch(new URL('search-index.json', root))).json())
     .filter(d => !d.l || d.l === lang)
     .map(d => ({ ...d, nt: norm(d.t), nk: norm((d.k || []).join(' ')), nd: norm(d.d) }));
 
@@ -34,7 +37,7 @@ export default async function search(el, { placeholder = 'Search…', empty = 'N
       .sort((a, b) => b.score - a.score)
       .slice(0, 30);
     out.innerHTML = hits.length
-      ? hits.map(({ d }) => `<li><h2><a href="${esc(d.u)}">${esc(d.t)}</a></h2><p>${esc(d.d)}</p></li>`).join('')
+      ? hits.map(({ d }) => `<li><h2><a href="${esc(base + d.u)}">${esc(d.t)}</a></h2><p>${esc(d.d)}</p></li>`).join('')
       : `<li>${esc(empty)}</li>`;
   };
 
