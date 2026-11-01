@@ -65,8 +65,7 @@
   "homepage": "https://github.com/6t9xstar/velocita#readme",
   "types": "src/index.d.ts",
   "publishConfig": {
-    "access": "public",
-    "provenance": true
+    "access": "public"
   },
   "bugs": {
     "url": "https://github.com/6t9xstar/velocita/issues"

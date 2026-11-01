@@ -9,6 +9,6 @@
     "check": "velocita check"
   },
   "dependencies": {
-    "velocita": "github:6t9xstar/velocita"
+    "velocita": "^1.1.0"
   }
 }
