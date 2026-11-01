@@ -1,5 +1,6 @@
 ---
 title: Deploy
+seoTitle: Deploy Velocita to Cloudflare, Netlify, Vercel or GitHub
 description: Publish to Cloudflare Pages, Netlify, Vercel or GitHub Pages, with a Lighthouse CI gate and a performance budget.
 group: Ship
 order: 8

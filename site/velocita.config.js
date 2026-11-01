@@ -17,7 +17,12 @@ export default {
     { title: 'Search', url: '/search/' },
   ],
   github: 'https://github.com/6t9xstar/velocita',
-  sections: { docs: { layout: 'docs', type: 'page' } },
+  searchTitle: { en: 'Search Velocita docs, guides and blog' },
+  sections: {
+    docs: { layout: 'docs', type: 'page', schemaType: 'TechArticle' },
+    blog: { title: 'Velocita blog: speed, SEO and AI search', description: 'Release notes and practical guides on static-site performance, technical SEO, llms.txt and getting cited by AI answer engines, from the Velocita team.' },
+  },
+  software: { name: 'Velocita', version: '1.0.0', license: 'https://opensource.org/licenses/MIT', repository: 'https://github.com/6t9xstar/velocita', downloadUrl: 'https://github.com/6t9xstar/velocita', category: 'DeveloperApplication' },
   og: { background: '#0b0d17', accent: '#7c5cff', color: '#ffffff' },
   css: `
 :root{--bg:#ffffff;--bg2:#f6f7fb;--fg:#0f1222;--muted:#5b6078;--line:#e6e8f0;--code:#f1f2f8;--accent:#5b3df5;--accent2:#00a3ff;--glow:rgba(91,61,245,.18);--card:#ffffff}

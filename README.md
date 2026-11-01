@@ -177,6 +177,8 @@ translationKey: blog/my-post
 noindex: false
 draft: false
 permalink: /custom/url/
+seoTitle: Longer <title> only   # nav and h1 keep `title`
+keywords: [a, b]
 layout: post
 ---
 ```
@@ -194,7 +196,12 @@ export default {
   nav: [{ title: 'Blog', url: '/blog/' }],
   image: '/og-default.png',    // default social image
   twitter: '@handle',
-  aiCrawlers: 'allow',         // 'allow' | 'search-only' | 'block'
+  aiCrawlers: 'allow',         // 'allow' | 'search-only' (blocks training bots) | 'block' (also answer bots)
+  contentSignal: false,        // add a Content-Signal line to robots.txt (Lighthouse flags it as unknown)
+  keywords: ['…'],             // fallback <meta name=keywords> (pages use frontmatter keywords, then tags)
+  themeColor: '#5b3df5',       // theme-color + web manifest
+  software: { version, license, repository }, // SoftwareApplication JSON-LD on the home page
+  sections: { docs: { schemaType: 'TechArticle' }, blog: { title, description } },
   indexNowKey: '',             // emits /<key>.txt for Bing/Yandex IndexNow
   pageSize: 20,                // items per collection/tag page (0 = no pagination)
   imageWidths: [480, 960, 1600], imageQuality: 78, // with sharp installed

@@ -1,5 +1,6 @@
 ---
 title: Layouts
+seoTitle: Custom layouts in Velocita: plain JavaScript functions
 description: Layouts are plain JavaScript functions. Override the page shell, posts, lists or add your own with helper functions.
 group: Guides
 order: 4

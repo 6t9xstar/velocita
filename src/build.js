@@ -1,6 +1,7 @@
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { join, relative, dirname, extname, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { createHash } from 'node:crypto';
 import { parseFrontmatter } from './frontmatter.js';
 import { renderMarkdown, slugify, escapeHtml as e } from './markdown.js';
 import { seoHead, lintPage, breadcrumbs, VERSION } from './seo.js';
@@ -43,6 +44,9 @@ async function loadLayouts(root, site) {
   }
   return { ...theme.layouts, ...custom };
 }
+
+const hashText = s => createHash('sha1').update(s).digest('hex').slice(0, 12);
+const clip = (s, n = 158) => (s.length <= n ? s : s.slice(0, n - 1).replace(/\s\S*$/, '') + '…');
 
 export async function build(root = '.', opts = {}) {
   const t0 = performance.now();
@@ -95,6 +99,7 @@ export async function build(root = '.', opts = {}) {
       tags: (data.tags || []).map(t => ({ name: String(t), slug: slugify(t), url: `/${prefix}tags/${slugify(t)}/` })),
       type: data.type || site.sections?.[local.split('/')[0]]?.type || (section && date ? 'article' : 'page'),
       layout: data.layout || site.sections?.[local.split('/')[0]]?.layout || (section ? 'post' : 'page'),
+      schemaType: data.schemaType || site.sections?.[local.split('/')[0]]?.schemaType,
       excerpt: rendered.text.slice(0, 155).replace(/\s\S*$/, '') + (rendered.text.length > 155 ? '…' : ''),
     });
   }
@@ -121,13 +126,17 @@ export async function build(root = '.', opts = {}) {
     const lang = items[0].lang;
     const idx = pages.find(p => p.url === url);
     if (idx) Object.assign(idx, { layout: idx.layout === 'page' || idx.layout === 'post' ? 'list' : idx.layout, items, type: 'page' });
-    else pages.push({ title: label[0].toUpperCase() + label.slice(1), url, lang, html: '', toc: [], text: '', layout: 'list', items, type: 'page', description: `All ${label} from ${site.title}.` });
+    else {
+      const cfg = site.sections?.[name] || {};
+      pages.push({ title: cfg.title || label[0].toUpperCase() + label.slice(1), url, lang, html: '', toc: [], text: '', layout: 'list', items, type: 'page',
+        description: cfg.description || clip(`All ${items.length} ${label} posts from ${site.title}, newest first: ${items.slice(0, 3).map(i => i.title).join('; ')}.`) });
+    }
   }
   const tagMap = {};
   for (const a of articles) for (const t of a.tags) (tagMap[t.url] ||= { name: t.name, lang: a.lang, items: [] }).items.push(a);
   for (const [url, t] of Object.entries(tagMap)) pages.push({
     title: `Tagged “${t.name}”`, url, lang: t.lang, html: '', toc: [], text: '', layout: 'list', items: t.items, type: 'page',
-    description: `${t.items.length} article${t.items.length > 1 ? 's' : ''} about ${t.name} on ${site.title}.`, noindex: t.items.length < 2,
+    description: clip(`${t.items.length} article${t.items.length > 1 ? 's' : ''} about ${t.name} on ${site.title}: ${t.items.slice(0, 3).map(i => i.title).join('; ')}.`), noindex: t.items.length < 2,
   });
 
   paginate(pages, site);
@@ -141,21 +150,35 @@ export async function build(root = '.', opts = {}) {
 
   // 3. Write HTML
   site.themeColor ??= site.og?.accent || '#0b57d0';
-  if (site.manifest !== false) emit('site.webmanifest', JSON.stringify({
-    name: site.title, short_name: String(site.title).slice(0, 12), description: site.description || '',
-    start_url: '.', display: 'browser', theme_color: site.themeColor, background_color: site.og?.background || '#ffffff',
-    icons: [{ src: (site.appleTouchIcon || site.favicon || 'favicon.svg').replace(/^\//, ''), sizes: 'any' }],
-  }));
   // Favicon: use public/favicon.(svg|ico|png) if present, else generate a lettermark so
   // browsers never hit a 404 on /favicon.ico (a Lighthouse best-practices failure).
   const ownIcon = ['favicon.svg', 'favicon.png', 'favicon.ico'].find(f => existsSync(join(publicDir, f)));
+  let iconSvg = ownIcon === 'favicon.svg' ? readFileSync(join(publicDir, ownIcon)) : null;
   if (site.favicon !== false) {
     site.faviconHref = site.favicon || (ownIcon ? `/${ownIcon}` : '/favicon.svg');
     if (!site.favicon && !ownIcon) {
       const { accent = '#0b57d0' } = site.og || {};
-      emit('favicon.svg', `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="${accent}"/><text x="32" y="44" font-family="system-ui,sans-serif" font-size="36" font-weight="700" fill="#fff" text-anchor="middle">${e(String(site.title).trim()[0] || 'V').toUpperCase()}</text></svg>`);
+      iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="${accent}"/><text x="32" y="44" font-family="system-ui,sans-serif" font-size="36" font-weight="700" fill="#fff" text-anchor="middle">${e(String(site.title).trim()[0] || 'V').toUpperCase()}</text></svg>`;
+      emit('favicon.svg', iconSvg);
     }
   }
+  // PNG app icons (iOS home screen, Android/PWA install) rasterised from the SVG icon when sharp is installed.
+  const icons = [{ src: site.faviconHref?.replace(/^\//, '') || 'favicon.svg', sizes: 'any', type: 'image/svg+xml' }];
+  if (iconSvg && site.appleTouchIcon === undefined && !existsSync(join(publicDir, 'apple-touch-icon.png'))) {
+    const sharp = await import('sharp').then(m => m.default, () => null);
+    if (sharp) {
+      const key = hashText(String(iconSvg));
+      for (const [name, size] of [['apple-touch-icon.png', 180], ['icon-192.png', 192], ['icon-512.png', 512]]) {
+        output.emitLazy(name, key + size, () => sharp(Buffer.from(String(iconSvg)), { density: 72 * size / 64 }).resize(size, size).png().toBuffer());
+        if (size > 180) icons.push({ src: name, sizes: `${size}x${size}`, type: 'image/png', purpose: 'any' });
+      }
+      site.appleTouchIcon = '/apple-touch-icon.png';
+    }
+  }
+  if (site.manifest !== false) emit('site.webmanifest', JSON.stringify({
+    name: site.title, short_name: String(site.title).slice(0, 12), description: site.description || '', lang: site.lang || 'en',
+    start_url: '.', scope: '.', display: 'browser', theme_color: site.themeColor, background_color: site.og?.background || '#ffffff', icons,
+  }));
   for (const f of walk(publicDir)) {
     const st = statSync(f);
     output.emitLazy(relative(publicDir, f), `${st.size}-${st.mtimeMs}`, () => readFileSync(f));
@@ -201,11 +224,15 @@ export async function build(root = '.', opts = {}) {
 ${indexable.map(p => `<url><loc>${site.url}${p.url}</loc>${(p.alternates || []).map(a => `<xhtml:link rel="alternate" hreflang="${a.lang}" href="${site.url}${a.url}"/>`).join('')}${(p.updated || p.date) ? `<lastmod>${(p.updated || p.date).toISOString().slice(0, 10)}</lastmod>` : ''}</url>`).join('\n')}
 </urlset>`);
 
-  const aiBots = ['GPTBot', 'ClaudeBot', 'anthropic-ai', 'Google-Extended', 'CCBot', 'PerplexityBot', 'Bytespider', 'Applebot-Extended'];
-  const trainingBots = ['GPTBot', 'anthropic-ai', 'Google-Extended', 'CCBot', 'Bytespider', 'Applebot-Extended'];
-  const blocked = site.aiCrawlers === 'block' ? aiBots : site.aiCrawlers === 'search-only' ? trainingBots : [];
+  // AI crawlers: training bots vs. search/answer bots (blocking the latter removes you from AI answers).
+  const trainingBots = ['GPTBot', 'anthropic-ai', 'ClaudeBot', 'Google-Extended', 'CCBot', 'Bytespider', 'Applebot-Extended', 'meta-externalagent', 'cohere-training-data-crawler'];
+  const answerBots = ['OAI-SearchBot', 'ChatGPT-User', 'Claude-SearchBot', 'Claude-User', 'PerplexityBot', 'Perplexity-User'];
+  const mode = site.aiCrawlers || 'allow';
+  const blocked = mode === 'block' ? [...trainingBots, ...answerBots] : mode === 'search-only' ? trainingBots : [];
+  // Content-Signal (contentsignals.org) is opt-in: Lighthouse's robots.txt audit reports it as an unknown directive.
+  const signal = { allow: 'search=yes, ai-input=yes, ai-train=yes', 'search-only': 'search=yes, ai-input=yes, ai-train=no', block: 'search=yes, ai-input=no, ai-train=no' }[mode];
   emit('robots.txt',
-    `User-agent: *\nAllow: /\n${blocked.map(b => `\nUser-agent: ${b}\nDisallow: /`).join('\n')}\n\nSitemap: ${site.url}/sitemap.xml\n`);
+    `User-agent: *\n${site.contentSignal ? `Content-Signal: ${signal}\n` : ''}Allow: /\n${blocked.map(b => `\nUser-agent: ${b}\nDisallow: /`).join('\n')}\n\nSitemap: ${site.url}/sitemap.xml\n${site.llms ? `# LLM-friendly index: ${site.url}/llms.txt\n` : ''}`);
 
   const redirects = writeRedirects({ site, pages, emit: (f, c) => emit(f, f.endsWith('.html') ? withBase(c, site.base) : c) });
   warnings.push(...redirects.conflicts);
@@ -227,7 +254,9 @@ ${indexable.map(p => `<url><loc>${site.url}${p.url}</loc>${(p.alternates || []).
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   X-Frame-Options: SAMEORIGIN
-  Permissions-Policy: interest-cohort=()
+  Permissions-Policy: browsing-topics=(), camera=(), microphone=(), geolocation=()
+  Strict-Transport-Security: max-age=63072000; includeSubDomains
+  Cross-Origin-Opener-Policy: same-origin
 /*.html
   Cache-Control: public, max-age=0, must-revalidate
 /assets/*

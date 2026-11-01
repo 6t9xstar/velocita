@@ -17,7 +17,8 @@ export const keywordsFor = (page, site) => {
 
 // Everything a search engine, social network or AI answer engine wants in <head>.
 export function seoHead(page, site) {
-  const title = page.url === '/' ? (page.title || site.title) : `${page.title} ${site.titleSeparator || '|'} ${site.title}`;
+  // `seoTitle` frontmatter overrides the <title> only (nav, headings and breadcrumbs keep `title`).
+  const title = page.seoTitle || (page.url === "/" ? (page.title || site.title) : `${page.title} ${site.titleSeparator || "|"} ${site.title}`);
   const desc = page.description || page.excerpt || site.description || '';
   const canonical = abs(site, page.canonical || page.url);
   const image = page.image || site.image;
@@ -99,6 +100,28 @@ export function jsonLd(page, site, canonical, desc, image) {
     '@type': 'BreadcrumbList',
     itemListElement: crumbs.map((c, i) => ({ '@type': 'ListItem', position: i + 1, name: c.name, item: abs(site, c.url) })),
   });
+  // WebPage (or CollectionPage + ItemList for listings): ties the page to the site, breadcrumb and
+  // main image, and marks the headline + summary as speakable for voice/answer engines.
+  const isList = Array.isArray(page.items) && page.items.length > 0;
+  graph.push(clean({
+    '@type': isList ? 'CollectionPage' : 'WebPage',
+    '@id': canonical + '#webpage', url: canonical, name: page.title || site.title, description: desc, inLanguage: lang,
+    isPartOf: { '@id': site.url + '#website' }, primaryImageOfPage: image ? { '@type': 'ImageObject', url: abs(site, image) } : undefined,
+    datePublished: page.date?.toISOString(), dateModified: (page.updated || page.date)?.toISOString(),
+    speakable: { '@type': 'SpeakableSpecification', cssSelector: ['h1', 'main p:first-of-type'] },
+    mainEntity: isList ? { '@type': 'ItemList', numberOfItems: page.items.length, itemListElement: page.items.slice(0, 50).map((it, i) => ({ '@type': 'ListItem', position: i + 1, url: abs(site, it.url), name: it.title })) } : undefined,
+  }));
+  if (page.url === '/' && site.software) graph.push(clean({
+    '@type': 'SoftwareApplication', '@id': site.url + '#software', name: site.software.name || site.title, description: site.description, url: site.url,
+    applicationCategory: site.software.category || 'DeveloperApplication', operatingSystem: site.software.os || 'Windows, macOS, Linux',
+    softwareVersion: site.software.version, license: site.software.license, downloadUrl: site.software.downloadUrl, codeRepository: site.software.repository,
+    offers: { '@type': 'Offer', price: site.software.price ?? 0, priceCurrency: site.software.currency || 'USD' }, publisher: { '@id': site.url + '#publisher' },
+  }));
+  if (page.type !== 'article' && page.schemaType && !isList) graph.push(clean({
+    '@type': page.schemaType, headline: page.title, description: desc, mainEntityOfPage: canonical, inLanguage: lang,
+    author: { '@id': site.url + '#publisher' }, publisher: { '@id': site.url + '#publisher' }, keywords: keywordsFor(page, site).join(', ') || undefined,
+    image: image ? abs(site, image) : undefined, dateModified: (page.updated || page.date)?.toISOString(), wordCount: page.words,
+  }));
   if (page.type === 'article') graph.push({
     '@type': page.schemaType || 'BlogPosting',
     headline: page.title, description: desc, mainEntityOfPage: canonical,

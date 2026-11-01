@@ -80,3 +80,15 @@ test('head: generator, keywords, author, publisher, twitter, manifest', async ()
     assert.ok(h.includes(s), s);
   assert.ok(!h.includes('[object Object]'));
 });
+
+test('schema: WebPage, CollectionPage list, TechArticle, SoftwareApplication; seoTitle', async () => {
+  const { seoHead } = await import('../src/seo.js');
+  const site = { title: 'S', url: 'https://x.dev', software: { version: '1.0.0' } };
+  assert.match(seoHead({ title: 'Home', url: '/' }, site), /"SoftwareApplication".*"softwareVersion":"1.0.0"/);
+  const list = seoHead({ title: 'Blog', url: '/blog/', items: [{ title: 'A', url: '/blog/a/' }] }, site);
+  assert.match(list, /"CollectionPage".*"ItemList".*"name":"A"/);
+  const doc = seoHead({ title: 'Deploy', seoTitle: 'Deploy guide for S', url: '/docs/deploy/', schemaType: 'TechArticle' }, site);
+  assert.match(doc, /<title>Deploy guide for S<\/title>/);
+  assert.match(doc, /"TechArticle"/);
+  assert.match(doc, /"WebPage".*"speakable"/);
+});
