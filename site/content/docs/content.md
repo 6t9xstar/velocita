@@ -30,6 +30,22 @@ draft: true                     # excluded from production
 ---
 ```
 
+All supported fields:
+
+| Field | What it does |
+|---|---|
+| `updated` | Last-modified date for `dateModified`, the sitemap and feeds |
+| `seoTitle` | A longer `<title>`; nav and `<h1>` keep `title` |
+| `keywords` | `<meta name="keywords">` (falls back to tags) |
+| `permalink` | Custom URL, e.g. `/custom/url/` |
+| `layout` | Layout name from `layouts/` |
+| `noindex` | `robots: noindex`, and excluded from the sitemap and llms.txt |
+| `translationKey` | Links translations whose paths differ |
+| `faq` | `- Question? :: Answer.` list → FAQPage JSON-LD |
+| `schema: HowTo` | With `steps` (`- Name :: What to do.`) and `totalTime` (e.g. `PT5M`) |
+| `schema: Product` | With `price`, `currency`, `brand`, `sku`, `rating`, `reviewCount`, `availability` |
+| `video` | VideoObject JSON-LD, with `videoThumbnail` and `videoDuration` |
+
 ## Images
 
 Write `![Alt text](photo.jpg)` with the file next to the Markdown. Velocita copies it, adds width and height, and creates WebP sizes when `sharp` is installed.

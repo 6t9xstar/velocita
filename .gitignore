@@ -11,8 +11,8 @@ site/dist/
 site/.velocita-cache/
 .lighthouseci/
 
-# compare/ benchmark artifacts
-compare/corpus/
-compare/velocita-site/content/
-compare/astro-site/.astro/
-compare/bench.log
+# bench/ artifacts
+bench/corpus/
+bench/velocita-site/content/
+bench/astro-site/.astro/
+bench/bench.log

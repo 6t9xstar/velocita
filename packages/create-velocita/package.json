@@ -1,0 +1,35 @@
+{
+  "name": "create-velocita",
+  "version": "1.0.0",
+  "description": "Scaffold a new Velocita site: npm create velocita@latest",
+  "type": "module",
+  "bin": {
+    "create-velocita": "index.js"
+  },
+  "files": [
+    "index.js",
+    "README.md"
+  ],
+  "dependencies": {
+    "velocita": "^1.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "velocita",
+    "create",
+    "static-site-generator",
+    "scaffold"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/6t9xstar/velocita.git",
+    "directory": "packages/create-velocita"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}

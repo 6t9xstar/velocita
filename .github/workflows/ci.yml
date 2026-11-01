@@ -53,3 +53,16 @@ jobs:
           npm install "$GITHUB_WORKSPACE"/velocita-*.tgz
           node -e "import('velocita').then(m => { for (const k of ['build','dev','defineConfig','renderMarkdown']) if (typeof m[k] !== 'function') throw new Error(k); console.log('exports ok') })"
           npx velocita new smoke --template blog && npx velocita build smoke --strict
+      - name: create-velocita works against the packed velocita
+        run: |
+          (cd packages/create-velocita && npm pack --pack-destination /tmp)
+          cd /tmp/consumer
+          npm install /tmp/create-velocita-*.tgz "$GITHUB_WORKSPACE"/velocita-*.tgz
+          npx create-velocita created --template docs
+          npx velocita build created --strict
+      - name: Shell completions parse
+        run: |
+          sudo apt-get install -y zsh fish >/dev/null
+          bash -n completions/velocita.bash
+          zsh -n completions/velocita.zsh
+          fish -n completions/velocita.fish

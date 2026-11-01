@@ -16,7 +16,7 @@ npm run dev:example    # live-reload the example site
 
 - One change per PR, with a test in `test/` that fails without it.
 - User-facing changes: update `README.md` and the `Unreleased` section of `CHANGELOG.md`.
-- Performance claims need numbers: run `node compare/bench.mjs 1000,5000 3` before and after, and paste both.
+- Performance claims need numbers: run `node bench/bench.mjs 1000,5000 3` before and after, and paste both.
 - CI must be green on Linux, Windows and macOS.
 
 ## Releasing (maintainers)

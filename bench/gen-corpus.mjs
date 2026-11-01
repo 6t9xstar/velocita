@@ -1,10 +1,10 @@
 // Deterministic Markdown corpus shared by the Astro and Velocita benchmark sites.
-// Usage: node compare/gen-corpus.mjs <count> <outDir>
+// Usage: node bench/gen-corpus.mjs <count> <outDir>
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const count = Number(process.argv[2] ?? 1000);
-const out = process.argv[3] ?? "compare/corpus";
+const out = process.argv[3] ?? "bench/corpus";
 rmSync(out, { recursive: true, force: true });
 mkdirSync(out, { recursive: true });
 

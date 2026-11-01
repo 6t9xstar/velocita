@@ -4,7 +4,7 @@ Goal: be able to say "faster than Astro" with numbers anyone can reproduce, and 
 
 ## 1. Measured today (2026-11-01)
 
-Harness: [`compare/bench.mjs`](bench.mjs). Both sites build the same deterministic corpus ([`gen-corpus.mjs`](gen-corpus.mjs)): roughly 450-word posts with headings, lists, a code block, a table and links.
+Harness: [`bench/bench.mjs`](bench.mjs). Both sites build the same deterministic corpus ([`gen-corpus.mjs`](gen-corpus.mjs)): roughly 450-word posts with headings, lists, a code block, a table and links.
 
 Each site builds the same pages: the post pages, a blog index paginated at 20 per page, 20 tag pages, a sitemap and RSS. Astro 7.4.4 (with `@astrojs/sitemap` and `@astrojs/rss`) is compared with Velocita at HEAD with `ogImages: false`.
 
@@ -51,7 +51,7 @@ Measured on the same 5,000-post corpus, back-to-back runs, after the change:
 
 The clean build is now I/O-bound. In a 5.0 s clean build, `Output.flush` takes 3.3 s writing 10,786 files on Windows, and raising `UV_THREADPOOL_SIZE` made no difference. Further gains therefore have to come from writing fewer files (step 4, "output diet"), not from worker threads.
 
-I started a second full-suite run (1k/5k/20k) but stopped it partway. The machine was under other load, and its numbers are inconsistent with the first run: Astro at 5,000 posts measured 30 s instead of 14 s. Those numbers are not reported here. Rerun `node compare/bench.mjs 1000,5000,20000 3` on an idle machine before publishing any 20k claim.
+I started a second full-suite run (1k/5k/20k) but stopped it partway. The machine was under other load, and its numbers are inconsistent with the first run: Astro at 5,000 posts measured 30 s instead of 14 s. Those numbers are not reported here. Rerun `node bench/bench.mjs 1000,5000,20000 3` on an idle machine before publishing any 20k claim.
 
 ## 2. Feature gap (where Astro still wins)
 

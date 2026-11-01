@@ -1,5 +1,5 @@
 // Astro vs Velocita: clean build, no-op rebuild, one-file-edit rebuild, output weight.
-// Usage: node compare/bench.mjs [counts=1000,5000] [runs=3]
+// Usage: node bench/bench.mjs [counts=1000,5000] [runs=3]
 import { execFileSync } from "node:child_process";
 import { cpSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync, appendFileSync, mkdirSync } from "node:fs";
 import { join, dirname, extname } from "node:path";

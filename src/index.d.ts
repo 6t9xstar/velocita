@@ -141,6 +141,11 @@ export function fromJson(opts: SourceCommon & ({ url: string } | { file: string 
 export function fromContentful(opts: SourceCommon & { space: string; accessToken: string; contentType: string; environment?: string }): Source;
 export function fromSanity(opts: SourceCommon & { projectId: string; query: string; dataset?: string; apiVersion?: string; token?: string }): Source;
 
+/** Scaffold a new site from a starter template (`blog`, `docs`, `business`). Throws if `dir` is not empty. */
+export function createSite(dir: string, opts?: { template?: string; title?: string }): { dir: string; name: string; title: string; date: string; template: string };
+/** Names of the bundled starter templates. */
+export function templates(): string[];
+
 export function pingIndexNow(site: ResolvedConfig, urls: string[], opts?: { endpoint?: string; fetchImpl?: typeof fetch }): Promise<unknown>;
 export function collectIslands(site: ResolvedConfig, emit: (file: string, data: string) => void): { inject(html: string): string };
 

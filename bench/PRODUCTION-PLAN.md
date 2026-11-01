@@ -12,7 +12,7 @@
 | V-e | No release workflow, no npm provenance; package never published | High |
 | V-f | No TypeScript declarations for the public API or config | Medium |
 | V-g | No CHANGELOG, CONTRIBUTING, SECURITY policy, issue/PR templates, Dependabot | Medium |
-| V-h | Build-cache work (this session) and `compare/` harness are uncommitted | — |
+| V-h | Build-cache work (this session) and `bench/` harness are uncommitted | — |
 
 ### Strada (6t9xstar/strada)
 | # | Finding | Severity |
