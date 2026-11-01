@@ -25,7 +25,6 @@ npx github:6t9xstar/velocita build my-site   # incremental production build → 
 | AI crawler policy (allow / search-only / block) | **one config line** | hand-edit robots |
 | SEO linter at build time | **built in** | none |
 | Sitemap, RSS, robots, 404, `_headers`, IndexNow key | **built in** | plugins |
-
 | Incremental builds | **only changed files are written**; stale files removed | full rewrite |
 | Responsive images | **WebP `srcset` (480/960/1600w)** with optional `sharp`, cached | plugin |
 | Pagination | **automatic** for collections & tags (`pageSize`) | manual |
