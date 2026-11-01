@@ -1,6 +1,8 @@
 # ⚡ Velocita
 
 **Sonic-speed, SEO-first static site framework for content websites.**
+**Live demo: https://6t9xstar.github.io/velocita/** (English + Hindi, search, islands, feeds, OG images)
+
 Zero dependencies. Zero JavaScript shipped by default. Every SEO, GEO (AI search) and performance best practice built in — not bolted on as plugins.
 
 ```bash
