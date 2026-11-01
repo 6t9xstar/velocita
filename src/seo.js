@@ -1,6 +1,19 @@
+import { readFileSync } from 'node:fs';
 import { escapeHtml as e } from './markdown.js';
 
+export const VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
+
 const abs = (site, p) => (/^https?:/.test(p) ? p : site.url.replace(/\/$/, '') + (p.startsWith('/') ? p : '/' + p));
+const imageTypes = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', avif: 'image/avif', gif: 'image/gif' };
+const list = v => (Array.isArray(v) ? v : String(v ?? '').split(',')).map(s => String(s).trim()).filter(Boolean);
+
+// Keywords: explicit frontmatter `keywords`, else the page's tags, else site.keywords.
+export const keywordsFor = (page, site) => {
+  const own = list(page.keywords);
+  if (own.length) return own;
+  const tags = (page.tags || []).map(t => t.name ?? t);
+  return tags.length ? tags : list(site.keywords);
+};
 
 // Everything a search engine, social network or AI answer engine wants in <head>.
 export function seoHead(page, site) {
@@ -10,12 +23,29 @@ export function seoHead(page, site) {
   const image = page.image || site.image;
   const robots = page.noindex || page.draft ? 'noindex, nofollow' : 'index, follow, max-image-preview:large, max-snippet:-1';
   const isArticle = page.type === 'article';
+  const author = page.author || site.author;
+  const o = typeof site.organization === 'object' ? site.organization : {};
+  const publisher = site.publisher || o.name || site.author || site.title;
+  const keywords = keywordsFor(page, site);
 
   const tags = [
     `<title>${e(title)}</title>`,
     `<meta name="description" content="${e(desc)}">`,
     `<link rel="canonical" href="${canonical}">`,
     `<meta name="robots" content="${robots}">`,
+    `<meta name="generator" content="Velocita ${VERSION}">`,
+    `<meta name="application-name" content="${e(site.title)}">`,
+    `<meta name="referrer" content="strict-origin-when-cross-origin">`,
+  ];
+  if (keywords.length) tags.push(`<meta name="keywords" content="${e(keywords.join(', '))}">`);
+  if (author) tags.push(`<meta name="author" content="${e(author)}">`);
+  if (publisher) tags.push(`<meta name="publisher" content="${e(publisher)}">`);
+  if (site.themeColor) tags.push(`<meta name="theme-color" content="${e(site.themeColor)}">`);
+  if (site.manifest !== false) tags.push(`<link rel="manifest" href="/site.webmanifest">`);
+  if (site.appleTouchIcon) tags.push(`<link rel="apple-touch-icon" href="${site.appleTouchIcon}">`);
+  tags.push(`<link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml">`);
+  for (const url of o.sameAs || site.sameAs || []) tags.push(`<link rel="me" href="${e(url)}">`);
+  tags.push(
     `<meta property="og:type" content="${isArticle ? 'article' : 'website'}">`,
     `<meta property="og:site_name" content="${e(site.title)}">`,
     `<meta property="og:title" content="${e(page.title || site.title)}">`,
@@ -23,18 +53,33 @@ export function seoHead(page, site) {
     `<meta property="og:url" content="${canonical}">`,
     `<meta property="og:locale" content="${e((page.lang || site.lang || 'en').replace('-', '_'))}">`,
     `<meta name="twitter:card" content="${image ? 'summary_large_image' : 'summary'}">`,
-  ];
+    `<meta name="twitter:title" content="${e(page.title || site.title)}">`,
+    `<meta name="twitter:description" content="${e(desc)}">`,
+  );
   if (site.twitter) tags.push(`<meta name="twitter:site" content="${e(site.twitter)}">`);
+  if (page.twitter || site.twitter) tags.push(`<meta name="twitter:creator" content="${e(page.twitter || site.twitter)}">`);
   if (image) {
-    tags.push(`<meta property="og:image" content="${abs(site, image)}">`, `<meta name="twitter:image" content="${abs(site, image)}">`);
+    const src = abs(site, image);
+    tags.push(`<meta property="og:image" content="${src}">`, `<meta property="og:image:secure_url" content="${src.replace(/^http:\/\/(?!localhost)/, 'https://')}">`, `<meta name="twitter:image" content="${src}">`);
+    const type = imageTypes[(src.split('?')[0].split('.').pop() || '').toLowerCase()];
+    if (type) tags.push(`<meta property="og:image:type" content="${type}">`);
     if (page.imageWidth) tags.push(`<meta property="og:image:width" content="${page.imageWidth}">`, `<meta property="og:image:height" content="${page.imageHeight}">`);
-    tags.push(`<meta property="og:image:alt" content="${e(page.imageAlt || page.title || site.title)}">`);
+    tags.push(`<meta property="og:image:alt" content="${e(page.imageAlt || page.title || site.title)}">`, `<meta name="twitter:image:alt" content="${e(page.imageAlt || page.title || site.title)}">`);
   }
   if (isArticle && page.date) {
     tags.push(`<meta property="article:published_time" content="${page.date.toISOString()}">`);
-    if (page.updated) tags.push(`<meta property="article:modified_time" content="${page.updated.toISOString()}">`);
-    for (const t of page.tags || []) tags.push(`<meta property="article:tag" content="${e(t)}">`);
+    const modified = (page.updated || page.date).toISOString();
+    tags.push(`<meta property="article:modified_time" content="${modified}">`, `<meta property="og:updated_time" content="${modified}">`);
+    if (author) tags.push(`<meta property="article:author" content="${e(page.authorUrl || site.authorUrl || author)}">`);
+    if (o.facebook) tags.push(`<meta property="article:publisher" content="${e(o.facebook)}">`);
+    if (page.section) tags.push(`<meta property="article:section" content="${e(page.section.split('/').pop().replace(/^\w/, c => c.toUpperCase()))}">`);
+    for (const t of page.tags || []) tags.push(`<meta property="article:tag" content="${e(t.name ?? t)}">`);
   }
+  // Local business: classic geo meta used by some regional search engines and directories.
+  const lb = page.url === '/' && site.localBusiness;
+  if (lb?.geo) tags.push(`<meta name="geo.position" content="${lb.geo.lat};${lb.geo.lng}">`, `<meta name="ICBM" content="${lb.geo.lat}, ${lb.geo.lng}">`);
+  if (lb?.address?.country) tags.push(`<meta name="geo.region" content="${e(lb.address.country + (lb.address.region ? '-' + lb.address.region : ''))}">`);
+  if (lb?.address?.city) tags.push(`<meta name="geo.placename" content="${e(lb.address.city)}">`);
   for (const alt of page.alternates || []) tags.push(`<link rel="alternate" hreflang="${e(alt.lang)}" href="${abs(site, alt.url)}">`);
   if (site.feed !== false) tags.push(`<link rel="alternate" type="application/rss+xml" title="${e(site.title)}" href="${page.feedBase || '/'}feed.xml">`, `<link rel="alternate" type="application/feed+json" title="${e(site.title)}" href="${page.feedBase || '/'}feed.json">`);
   tags.push(`<script type="application/ld+json">${JSON.stringify(jsonLd(page, site, canonical, desc, image)).replace(/</g, '\\u003c')}</script>`);
@@ -59,7 +104,7 @@ export function jsonLd(page, site, canonical, desc, image) {
     headline: page.title, description: desc, mainEntityOfPage: canonical,
     datePublished: page.date?.toISOString(), dateModified: (page.updated || page.date)?.toISOString(),
     author: { '@type': 'Person', name: page.author || site.author || site.title },
-    publisher: org, keywords: (page.tags || []).join(', ') || undefined,
+    publisher: org, keywords: keywordsFor(page, site).join(', ') || undefined,
     wordCount: page.words, image: image ? abs(site, image) : undefined, inLanguage: lang,
   });
   const schema = page.schema;

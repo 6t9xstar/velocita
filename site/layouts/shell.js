@@ -10,7 +10,6 @@ export default ({ page, site, head, content, h }) => {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#5b3df5">
 ${site.faviconHref ? `<link rel="icon" href="${site.faviconHref}">` : ''}
 ${head}
 <style>${h.css(site.css)}</style>

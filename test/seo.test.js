@@ -69,3 +69,14 @@ test('IndexNow posts changed URLs, skips without key or on localhost', async () 
   assert.ok((await pingIndexNow({ url: 'http://localhost:3000', indexNowKey: 'k' }, ['x'], { fetchImpl })).skipped);
   assert.equal(calls.length, 1);
 });
+
+test('head: generator, keywords, author, publisher, twitter, manifest', async () => {
+  const { seoHead } = await import('../src/seo.js');
+  const site = { title: 'S', url: 'https://x.dev', author: 'Ann', organization: { name: 'Acme', sameAs: ['https://github.com/acme'] }, themeColor: '#123456' };
+  const page = { title: 'P', description: 'D', url: '/blog/p/', type: 'article', section: 'blog', date: new Date('2026-01-01'), tags: [{ name: 'seo' }, { name: 'speed' }] };
+  const h = seoHead(page, site);
+  for (const s of ['name="generator" content="Velocita', 'name="keywords" content="seo, speed"', 'name="author" content="Ann"', 'name="publisher" content="Acme"',
+    'name="twitter:title"', 'article:section" content="Blog"', 'article:tag" content="seo"', 'rel="manifest"', 'rel="me" href="https://github.com/acme"', 'theme-color'])
+    assert.ok(h.includes(s), s);
+  assert.ok(!h.includes('[object Object]'));
+});

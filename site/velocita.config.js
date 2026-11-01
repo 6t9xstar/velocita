@@ -6,6 +6,8 @@ export default {
   // `npm run deploy:demo` sets SITE_URL to the GitHub Pages address.
   url: process.env.SITE_URL || 'https://velocita.dev',
   author: 'Velocita',
+  themeColor: '#5b3df5',
+  keywords: ['static site generator', 'web framework', 'SEO', 'Core Web Vitals', 'Lighthouse 100', 'zero JavaScript', 'GEO', 'llms.txt', 'Markdown'],
   lang: 'en',
   organization: { name: 'Velocita', sameAs: ['https://github.com/6t9xstar/velocita'] },
   nav: [

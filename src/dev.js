@@ -4,7 +4,7 @@ import { join, extname, resolve } from 'node:path';
 import { build } from './build.js';
 
 const types = {
-  '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'text/javascript', '.json': 'application/json',
+  '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'text/javascript', '.json': 'application/json', '.webmanifest': 'application/manifest+json',
   '.xml': 'application/xml', '.txt': 'text/plain; charset=utf-8', '.md': 'text/markdown; charset=utf-8',
   '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp',
   '.avif': 'image/avif', '.gif': 'image/gif', '.ico': 'image/x-icon', '.woff2': 'font/woff2',
@@ -44,7 +44,7 @@ export async function dev(root = '.', port = 3000) {
     if (existsSync(p) && statSync(p).isDirectory()) p = join(p, 'index.html');
     const ok = existsSync(p);
     if (!ok) p = join(out, '404.html');
-    res.writeHead(ok ? 200 : 404, { 'Content-Type': types[extname(p)] || 'application/octet-stream' });
+    res.writeHead(ok ? 200 : 404, { 'X-Powered-By': 'Velocita', 'Content-Type': types[extname(p)] || 'application/octet-stream' });
     res.end(readFileSync(p));
   }).listen(port, () => console.log(`🚀 dev server at http://localhost:${port}`));
 }

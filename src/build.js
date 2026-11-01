@@ -3,7 +3,7 @@ import { join, relative, dirname, extname, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseFrontmatter } from './frontmatter.js';
 import { renderMarkdown, slugify, escapeHtml as e } from './markdown.js';
-import { seoHead, lintPage, breadcrumbs } from './seo.js';
+import { seoHead, lintPage, breadcrumbs, VERSION } from './seo.js';
 import { minifyHtml } from './minify.js';
 import * as theme from './theme.js';
 import { Output } from './output.js';
@@ -140,6 +140,12 @@ export async function build(root = '.', opts = {}) {
   const ctx = { site, pages, articles, sections, tags: tagMap, h };
 
   // 3. Write HTML
+  site.themeColor ??= site.og?.accent || '#0b57d0';
+  if (site.manifest !== false) emit('site.webmanifest', JSON.stringify({
+    name: site.title, short_name: String(site.title).slice(0, 12), description: site.description || '',
+    start_url: '.', display: 'browser', theme_color: site.themeColor, background_color: site.og?.background || '#ffffff',
+    icons: [{ src: (site.appleTouchIcon || site.favicon || 'favicon.svg').replace(/^\//, ''), sizes: 'any' }],
+  }));
   // Favicon: use public/favicon.(svg|ico|png) if present, else generate a lettermark so
   // browsers never hit a 404 on /favicon.ico (a Lighthouse best-practices failure).
   const ownIcon = ['favicon.svg', 'favicon.png', 'favicon.ico'].find(f => existsSync(join(publicDir, f)));
@@ -217,6 +223,7 @@ ${indexable.map(p => `<url><loc>${site.url}${p.url}</loc>${(p.alternates || []).
 
   // Host config: long-lived caching for assets + security headers (Netlify / Cloudflare Pages format).
   emit('_headers', `/*
+  X-Powered-By: Velocita ${VERSION}
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   X-Frame-Options: SAMEORIGIN
