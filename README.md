@@ -41,6 +41,7 @@ Benchmark (3,000 posts + 50 tags, Windows laptop, Node 24):
 | Clean (`--clean`) | **2.3 s** |
 | Rebuild, nothing changed | **0.7 s** |
 | Rebuild after editing one post | **0.7 s** (3 files written) |
+| First build with OG images (`sharp`, 3,052 cards) | ~46 s once; cached afterwards (rebuild 0.75 s) |
 
 Optional responsive images: `npm i sharp` in your site and Velocita generates WebP variants automatically. Images placed next to Markdown files (`![alt](photo.jpg)`) are copied and fingerprinted to `/_img/`.
 
