@@ -1,0 +1,25 @@
+---
+const { title, description } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <link rel="alternate" type="application/rss+xml" href="/rss.xml" />
+  </head>
+  <body>
+    <header><a href="/">Home</a> <a href="/blog/">Blog</a></header>
+    <main><slot /></main>
+  </body>
+</html>
+<style is:global>
+  body { font-family: system-ui, sans-serif; max-width: 70ch; margin: 0 auto; padding: 1rem; line-height: 1.6; }
+  pre { overflow-x: auto; }
+</style>

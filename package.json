@@ -8,12 +8,17 @@
   },
   "main": "src/index.js",
   "exports": {
-    ".": "./src/index.js"
+    ".": {
+      "types": "./src/index.d.ts",
+      "default": "./src/index.js"
+    },
+    "./package.json": "./package.json"
   },
   "files": [
     "bin",
     "src",
-    "templates"
+    "templates",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "test": "node --test --test-concurrency=1",
@@ -21,10 +26,12 @@
     "dev:example": "node bin/velocita.js dev example",
     "deploy:demo": "node scripts/deploy-demo.mjs",
     "dev:site": "node bin/velocita.js dev site",
-    "build:site": "node bin/velocita.js build site --strict --check"
+    "build:site": "node bin/velocita.js build site --strict --check",
+    "typecheck": "npx -y -p typescript@5 tsc --noEmit --strict --skipLibCheck false src/index.d.ts types-test/check.ts",
+    "prepublishOnly": "npm test"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "keywords": [
     "ssg",
@@ -53,5 +60,13 @@
     "type": "git",
     "url": "git+https://github.com/6t9xstar/velocita.git"
   },
-  "homepage": "https://github.com/6t9xstar/velocita#readme"
+  "homepage": "https://github.com/6t9xstar/velocita#readme",
+  "types": "src/index.d.ts",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "bugs": {
+    "url": "https://github.com/6t9xstar/velocita/issues"
+  }
 }

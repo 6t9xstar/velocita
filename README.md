@@ -1,5 +1,7 @@
 # ⚡ Velocita
 
+[![CI](https://github.com/6t9xstar/velocita/actions/workflows/ci.yml/badge.svg)](https://github.com/6t9xstar/velocita/actions/workflows/ci.yml)
+
 **Sonic-speed, SEO-first static site framework for content websites.**
 
 **Live site: https://6t9xstar.github.io/velocita/**: the official Velocita website, built with Velocita (source in [`site/`](site/)). Run it locally with `npm install && npm run dev:site`.
@@ -74,7 +76,11 @@ Checks every built page in milliseconds, without a browser: gzipped HTML / JS / 
 | Redirects | **`aliases:` + `redirects`** → `_redirects` 301s + HTML fallback | manual |
 | Feeds | **RSS + JSON Feed** for the site, every section, tag and language | one RSS feed |
 
-Benchmark (3,000 posts + 50 tags, Windows laptop, Node 24):
+Requires Node.js 20 or later. Rendered Markdown is cached in `.velocita-cache/` between builds (`cache: false` turns it off), and pages whose HTML did not change are neither minified nor rewritten.
+
+For a like-for-like comparison with Astro on realistic posts, see [`compare/PLAN.md`](compare/PLAN.md) and run `node compare/bench.mjs`.
+
+Benchmark (3,000 short posts + 50 tags, Windows laptop, Node 24; measured before the render cache):
 
 | Build | Time |
 |---|---|

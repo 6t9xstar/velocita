@@ -1,0 +1,55 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  test:
+    name: Node ${{ matrix.node }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node: [20, 22, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: Strict build of example and official site
+        run: |
+          node bin/velocita.js build example --clean --strict --check
+          node bin/velocita.js build site --clean --strict --check
+      - name: Scaffold every template and build it
+        shell: bash
+        run: |
+          for t in blog docs business; do
+            node bin/velocita.js new "$RUNNER_TEMP/site-$t" --template "$t"
+            node bin/velocita.js build "$RUNNER_TEMP/site-$t" --strict --check
+          done
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm run typecheck
+      - name: Pack and smoke-test the tarball
+        run: |
+          npm pack
+          mkdir /tmp/consumer && cd /tmp/consumer
+          npm init -y >/dev/null
+          npm install "$GITHUB_WORKSPACE"/velocita-*.tgz
+          node -e "import('velocita').then(m => { for (const k of ['build','dev','defineConfig','renderMarkdown']) if (typeof m[k] !== 'function') throw new Error(k); console.log('exports ok') })"
+          npx velocita new smoke --template blog && npx velocita build smoke --strict

@@ -65,3 +65,27 @@ test('pagination splits long lists', async () => {
   assert.match(first, /rel="next"/);
   rmSync(r.out, { recursive: true, force: true });
 });
+
+test('build cache: cached rebuild is byte-identical to an uncached build, edits invalidate', async () => {
+  const { mkdtempSync, mkdirSync, writeFileSync, readdirSync, appendFileSync } = await import('node:fs');
+  const { join } = await import('node:path');
+  const { tmpdir } = await import('node:os');
+  const root = mkdtempSync(join(tmpdir(), 'vel-cache-'));
+  mkdirSync(join(root, 'content/blog'), { recursive: true });
+  writeFileSync(join(root, 'velocita.config.js'), "export default { title: 'T', url: 'https://t.example', ogImages: false };");
+  for (let i = 0; i < 3; i++) writeFileSync(join(root, `content/blog/p${i}.md`), `---\ntitle: Post ${i}\ndescription: Post number ${i} for the cache test.\ndate: 2026-01-0${i + 1}\n---\n\n## H\n\nText ${i}.\n`);
+  const snapshot = dir => Object.fromEntries(readdirSync(dir, { recursive: true }).filter(f => /\.(html|md|xml|txt)$/.test(f)).sort().map(f => [f, readFileSync(join(dir, f), 'utf8')]));
+
+  await build(root, { clean: true, cache: false });
+  const uncached = snapshot(join(root, 'dist'));
+  await build(root, { clean: true });          // cold cache
+  const r = await build(root, { clean: true }); // warm cache, every page rewritten from cached renders
+  assert.equal(r.written > 0, true);
+  assert.deepEqual(snapshot(join(root, 'dist')), uncached);
+
+  appendFileSync(join(root, 'content/blog/p1.md'), '\nFresh paragraph.\n');
+  const r2 = await build(root);
+  assert.match(readFileSync(join(root, 'dist/blog/p1/index.html'), 'utf8'), /Fresh paragraph/);
+  assert.ok(r2.written >= 1 && r2.written < r.written, `wrote ${r2.written}`);
+  rmSync(root, { recursive: true, force: true });
+});

@@ -8,7 +8,7 @@ import { checkSite } from '../src/check.js';
 import { writeDeployConfig, deployCommand, targets } from '../src/deploy.js';
 
 const args = process.argv.slice(2);
-const VALUE_FLAGS = ['--port', '--template', '--title'];
+const VALUE_FLAGS = ['--port', '--host', '--template', '--title'];
 const flag = n => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : undefined; };
 const has = n => args.includes(n);
 const positional = args.filter((a, i) => !a.startsWith('--') && !VALUE_FLAGS.includes(args[i - 1]));
@@ -50,7 +50,7 @@ if (cmd === 'build' || cmd === 'audit') {
   const r = await runBuild(rest[0] || '.');
   if (printCheck(r).failures.length) process.exit(1);
 } else if (cmd === 'dev') {
-  await dev(rest[0] || '.', Number(flag('--port')) || 3000);
+  await dev(rest[0] || '.', Number(flag('--port')) || 3000, { host: flag('--host') || '127.0.0.1' });
 } else if (cmd === 'new') {
   try {
     const s = createSite(rest[0] || 'my-site', { template: flag('--template') || 'blog', title: flag('--title') });
@@ -81,7 +81,7 @@ if (cmd === 'build' || cmd === 'audit') {
   console.log(`velocita: sonic-speed, SEO-first static sites
 
   velocita new   [dir] [--template ${templates().join('|')}] [--title "My Site"]
-  velocita dev   [dir] [--port N]       dev server with live reload
+  velocita dev   [dir] [--port N] [--host H]  dev server with live reload (localhost only unless --host 0.0.0.0)
   velocita build [dir] [--clean] [--strict] [--check] [--indexnow]
                                         production build to dist/ (incremental)
                                         --strict    fail on broken links/anchors

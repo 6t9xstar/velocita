@@ -15,6 +15,7 @@ import { writeFeeds } from './feeds.js';
 import { writeRedirects } from './redirects.js';
 import { collectIslands } from './islands.js';
 import { basePath, withBase } from './base.js';
+import { BuildCache } from './cache.js';
 
 const walk = dir => !existsSync(dir) ? [] : readdirSync(dir).flatMap(f => {
   const p = join(dir, f);
@@ -64,6 +65,9 @@ export async function build(root = '.', opts = {}) {
   const output = new Output(out, { clean: site.clean });
   const emit = output.emit.bind(output);
   const images = await createImagePipeline(site, output);
+  // Rendered Markdown is cached across builds (`cache: false` disables).
+  const useCache = site.cache !== false && !site.dev;
+  const mdCache = new BuildCache(root, 'markdown', `${VERSION}|${site.url}`);
 
   // 1. Load + render content
   const pages = [];
@@ -85,12 +89,26 @@ export async function build(root = '.', opts = {}) {
     const prefix = lang === locales[0] ? '' : lang + '/';
     const local = rel.slice(prefix.length);
     const section = local.includes('/') ? prefix + local.split('/')[0] : null;
-    const rendered = rel.endsWith('.html')
-      ? { html: body, toc: [], text: body.replace(/<[^>]+>/g, ' '), words: 0, readingTime: 1 }
-      : renderMarkdown(body, {
-        siteUrl: site.url,
-        image: src => images.process(src, src.startsWith('/') ? join(publicDir, src) : file ? join(dirname(file), src) : ''),
+    const imagePath = src => (src.startsWith('/') ? join(publicDir, src) : file ? join(dirname(file), src) : '');
+    const image = src => images.process(src, imagePath(src));
+    let rendered;
+    if (rel.endsWith('.html')) rendered = { html: body, toc: [], text: body.replace(/<[^>]+>/g, ' '), words: 0, readingTime: 1 };
+    else if (!useCache) rendered = renderMarkdown(body, { siteUrl: site.url, image });
+    else {
+      // The image pipeline has side effects (it emits variants and reads dimensions), so the
+      // key covers each referenced image's size + mtime, and cache hits replay image() calls.
+      const stamps = [...body.matchAll(/!\[[^\]]*\]\(([^)\s]+)/g)].map(([, src]) => {
+        try { const st = statSync(imagePath(src)); return `${src}:${st.size}:${st.mtimeMs}`; } catch { return src; }
       });
+      const key = BuildCache.key(file ? dirname(rel) : 'source', body, stamps.join('|'));
+      let fresh = false;
+      rendered = mdCache.get(key, () => {
+        fresh = true;
+        const used = [];
+        return { ...renderMarkdown(body, { siteUrl: site.url, image: src => (used.push(src), image(src)) }), used };
+      });
+      if (!fresh) for (const src of rendered.used) image(src);
+    }
     const date = toDate(data.date) || (section && file ? statSync(file).mtime : null);
     pages.push({
       ...data, ...rendered, file, rel, url, section, markdown: body, lang,
@@ -187,8 +205,13 @@ export async function build(root = '.', opts = {}) {
   const prefetch = site.prefetch
     ? `<script type="speculationrules">{"prerender":[{"where":{"href_matches":"/*"},"eagerness":"moderate"}]}</script>`
     : '';
+  const minify = site.minify && !site.dev;
   const write = (url, html) => {
-    emit(url.endsWith('.html') ? url : url + 'index.html', withBase(html, site.base));
+    const file = url.endsWith('.html') ? url : url + 'index.html';
+    // Keyed on the unminified HTML: if the previous build produced the same page,
+    // it is neither minified nor written again.
+    if (minify) output.emitLazy(file, BuildCache.key(html, site.base), () => withBase(minifyHtml(html), site.base));
+    else emit(file, withBase(html, site.base));
   };
   const islands = collectIslands(site, emit);
   const feedMap = writeFeeds({ site, articles, sections, tags: tagMap, emit });
@@ -201,7 +224,7 @@ export async function build(root = '.', opts = {}) {
     const head = seoHead(page, site) + prefetch + (site.head || '');
     let html = islands.inject(shell({ page, site, head, content, ...ctx }));
     if (site.dev) html = html.replace('</body>', `<script>new EventSource('/__reload').onmessage=()=>location.reload()</script></body>`);
-    return site.minify && !site.dev ? minifyHtml(html) : html;
+    return html;
   };
 
   for (const page of pages) {
@@ -271,6 +294,7 @@ ${indexable.map(p => `<url><loc>${site.url}${p.url}</loc>${(p.alternates || []).
   await images.flush();
   const audit = site.audit === false ? { errors: [], warnings: [], suggestions: [] } : auditSite({ pages, htmlByUrl, files: new Set(output.files.keys()) });
   const { writtenFiles, ...stats } = await output.flush();
+  if (useCache) mdCache.save();
   const changedUrls = writtenFiles.filter(f => f.endsWith('index.html')).map(f => site.url + '/' + f.replace(/index[.]html$/, ''));
   const ms = Math.round(performance.now() - t0);
   return { pages: pages.length + 1, ms, warnings, out, audit, changedUrls, ogImages: ogCount, site, ...stats };

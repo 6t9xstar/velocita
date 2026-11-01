@@ -1,0 +1,16 @@
+name: Bug report
+description: Something builds, renders or serves incorrectly
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes: { label: What happened, description: Include the command you ran and its full output. }
+    validations: { required: true }
+  - type: textarea
+    id: repro
+    attributes: { label: Minimal reproduction, description: A config + one content file is usually enough. }
+    validations: { required: true }
+  - type: input
+    id: versions
+    attributes: { label: Versions, placeholder: "velocita 1.1.0, Node 22.11, Windows 11" }
+    validations: { required: true }

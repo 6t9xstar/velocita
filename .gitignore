@@ -10,3 +10,9 @@ site/dist-pages/
 site/dist/
 site/.velocita-cache/
 .lighthouseci/
+
+# compare/ benchmark artifacts
+compare/corpus/
+compare/velocita-site/content/
+compare/astro-site/.astro/
+compare/bench.log

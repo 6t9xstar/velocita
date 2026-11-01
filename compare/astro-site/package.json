@@ -1,0 +1,13 @@
+{
+  "name": "astro-bench",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "astro build"
+  },
+  "dependencies": {
+    "@astrojs/rss": "^4",
+    "@astrojs/sitemap": "^3",
+    "astro": "^7"
+  }
+}
