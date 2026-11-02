@@ -4,6 +4,11 @@ All notable changes are listed here. Velocita follows [Semantic Versioning](http
 
 ## [Unreleased]
 
+### Added
+- **Collection schemas**: `collections.<folder>.schema` in config checks frontmatter at build time. Types `string`, `number`, `boolean`, `date`, `string[]`; `'type?'` or `required: false` for optional fields; `validate(value, data)` for custom rules. Every mismatch is reported with its file and field and fails the build. Docs: /docs/content/#collection-schemas.
+- Frontmatter supports nested YAML maps and lists (including lists of maps) by indentation.
+- Two pages resolving to the same URL (duplicate slugs, clashing permalinks, a page on a generated tag/section URL) fail the build, naming both sources, instead of one silently overwriting the other.
+
 ### Security
 - The output writer refuses paths that escape the output directory, and no longer deletes files outside it when `.velocita-manifest.json` lists them.
 - Invalid `permalink` values (`../`, no leading `/`, spaces, quotes, `<>`, `?`, `#`) fail the build with a clear error instead of writing outside `dist/` or breaking `href` attributes.
