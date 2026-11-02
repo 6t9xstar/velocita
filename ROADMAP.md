@@ -19,7 +19,8 @@ Goal: the fastest, most search- and AI-discoverable framework for content websit
 - CSS minified once per build; cached date formatters
 
 ## 🔜 v0.2.x — Speed, continued
-- Skip re-parsing unchanged Markdown (persistent render cache) and worker_threads rendering
+- ✅ Persistent render cache: unchanged Markdown is not re-parsed
+- worker_threads rendering for very large sites
 - AVIF variants, `<picture>` output, image fingerprinting under `/assets/`
 - Per-layout critical CSS
 
@@ -44,7 +45,7 @@ Goal: the fastest, most search- and AI-discoverable framework for content websit
 
 ## 🔜 v0.4.x
 - Notion and Strapi adapters; Git-based CMS config (Decap / Tina)
-- Nested frontmatter (YAML objects)
+- ✅ Nested frontmatter (YAML objects)
 - Per-locale llms.txt
 
 ## ✅ v1.0 — Ecosystem (shipped)
@@ -63,6 +64,48 @@ Goal: the fastest, most search- and AI-discoverable framework for content websit
 - Release pipeline for npm with provenance (`velocita`, `create-velocita`, `velocita-theme-paper`)
 - First npm publish: `velocita`, `create-velocita` and `velocita-theme-paper` 1.1.0 are on npm
 
-## 🔜 Next
-- Lighthouse CI numbers for the news and portfolio templates
-- A theme gallery page on the website
+## ✅ v1.2 — Trust and quality (shipped)
+- Security hardening: output paths contained to `dist/`, permalink and IndexNow validation, Markdown URL allowlist, opt-in raw-HTML escaping, head URL validation, pinned CI actions
+- Collection schemas: typed frontmatter checked at build time, nested YAML, duplicate-route errors
+- Dev experience: watches configured folders, shows rebuild errors in the browser, `velocita preview` and `velocita doctor`
+- Output profiles (`minimal`, `standard`, `ai`, `full`) with measured output sizes
+- SEO / AEO / GEO head: generator, keywords, author, publisher, full Twitter and article tags, web manifest, PNG app icons
+- Schema: WebPage and CollectionPage with ItemList, speakable, TechArticle for docs, SoftwareApplication; `seoTitle`
+- robots.txt separates AI training bots from AI answer bots (`aiCrawlers: 'search-only'`); Content-Signal opt-in
+- Lighthouse CI 100 / 100 / 100 / 100 measured on all five templates (news and portfolio added November 2026)
+- Theme gallery on the website
+
+## 🔜 v1.3 — Speed at scale
+Target: 50,000 pages, clean build under 10 s, one-file rebuild under 300 ms, measured in `bench/`.
+- worker_threads Markdown rendering
+- AVIF output and `<picture>` with WebP fallback
+- Per-layout critical CSS, so large sites keep inlined CSS under 14 KB
+- Dependency-aware rebuilds: editing a post only rewrites the pages that list it
+- Publish build-time numbers for every release in CI, not just once
+
+## 🔜 v1.4 — Search and AI discoverability
+- Per-locale `llms.txt` and `llms-full.txt`
+- Custom OG image templates (`layouts/og.js`)
+- Opt-in external link checker
+- Auto-suggested internal links from content similarity, surfaced in `velocita audit`
+- `velocita audit --ai`: passage-length, answer-first and entity checks for AI-answer citability
+- Sitemap index and image / news sitemaps for large and news sites
+
+## 🔜 v1.5 — Content platform
+- Notion and Strapi adapters; Git-based CMS config (Decap, Tina)
+- Incremental source fetching: refetch only CMS entries changed since the last build
+- Content collections from CSV and YAML data files
+- Scheduled publishing (`publishAt`) that works with cron-triggered deploys
+
+## 🔜 v1.6 — Ecosystem
+- At least five themes in the gallery, each listed with a live demo and its own Lighthouse scores
+- `velocita add <theme|island>` to install and wire a package in one command
+- Island library: tabs, accordion, image lightbox, video facade, newsletter form
+- Plugin hooks (`onPage`, `onBuild`) with a stable, documented API
+
+## 🎯 v2.0 — Goals
+- Stable plugin API with semver guarantees
+- A public benchmark against Astro, Hugo, Eleventy and Next.js static export on the same hardware, with raw data and scripts so anyone can reproduce it
+- An edge adapter (Cloudflare Workers) for hybrid pages, still static by default
+
+Each release ships only what is measured: Lighthouse CI on every template, `velocita audit` and `velocita check` clean, and benchmark numbers in `bench/`.

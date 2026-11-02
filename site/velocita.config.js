@@ -82,5 +82,9 @@ footer.site{margin-top:2rem}.foot{display:grid;grid-template-columns:2fr 1fr 1fr
 .prevnext a{text-decoration:none;font-weight:600}
 @media(max-width:60rem){.grid{grid-template-columns:1fr 1fr}.split,.docs{grid-template-columns:1fr}.side{position:static}.foot{grid-template-columns:1fr 1fr}}
 @media(max-width:40rem){.grid,.stats{grid-template-columns:1fr 1fr}.grid{grid-template-columns:1fr}.hero{padding-top:3.5rem}header.site .wrap{flex-wrap:wrap;gap:.5rem}header.site nav{overflow-x:auto;max-width:100%}header.site nav a{padding:.35rem .5rem;font-size:.9rem}.gh span{display:none}.meter{grid-template-columns:1fr 1fr}}
+.gallery{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin:2rem 0}.theme{padding:1.2rem;border:1px solid var(--line);border-radius:16px;background:var(--card)}.theme h2{font-size:1.25rem;margin:1rem 0 .3rem}.theme p{margin:.4rem 0}
+.previews{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}.mock{margin:0;border:1px solid var(--l);border-radius:10px;overflow:hidden;background:var(--b);color:var(--f);font-size:13px;line-height:1.45}.mock .bar{display:flex;justify-content:space-between;gap:.4rem;padding:.45rem .6rem;border-bottom:1px solid var(--l)}.mock .bar span,.mock .meta{color:var(--m)}.mock .body{display:grid;gap:.2rem;padding:.6rem}.mock .link{color:var(--a)}.mock figcaption{padding:.3rem .6rem;border-top:1px solid var(--l);color:var(--m);font-family:system-ui,sans-serif}
+.tags span{display:inline-block;font-size:.8rem;padding:.1rem .55rem;margin:0 .3rem .3rem 0;border:1px solid var(--line);border-radius:99px;color:var(--muted)}
+@media(max-width:60rem){.gallery{grid-template-columns:1fr}}
 `,
 };

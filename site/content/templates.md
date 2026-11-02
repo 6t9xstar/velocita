@@ -34,7 +34,9 @@ Each template was built and run through Lighthouse CI on every page:
 | Blog | 100 | 100 | 100 | 100 |
 | Docs | 100 | 100 | 100 | 100 |
 | Local business | 100 | 100 | 100 | 100 |
+| News / magazine | 100 | 100 | 100 | 100 |
+| Agency / portfolio | 100 | 100 | 100 | 100 |
 
-The news and portfolio templates are newer. They pass `velocita audit` and `velocita check` in CI but have not yet been measured with Lighthouse CI.
+News and portfolio were measured on November 1, 2026 across all 16 pages of each starter (`@lhci/cli` 0.14, Lighthouse's default mobile emulation with simulated throttling). Largest Contentful Paint stayed under 1.3 s and layout shift under 0.005 on every page. Pages marked `noindex` (404, search, and tag pages with a single post) score 66 for SEO by design, because Lighthouse counts `noindex` against them.
 
 Next, read [Getting started](/docs/) or learn how to [deploy](/docs/deploy/).

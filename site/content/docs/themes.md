@@ -6,6 +6,8 @@ group: Guides
 order: 4.5
 ---
 
+Browse the [theme gallery](/themes/) to see each theme in light and dark.
+
 ## Use a theme
 
 ```sh

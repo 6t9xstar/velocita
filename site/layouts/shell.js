@@ -24,7 +24,7 @@ ${head}
 <footer class="site"><div class="wrap foot">
 <div><a class="brand" href="/">${logo('lg2')}${e(site.title)}</a><p>Zero-JS, SEO-first static sites.<br>MIT licensed · © ${new Date().getFullYear()}</p></div>
 <div><h2>Learn</h2><ul><li><a href="/docs/">Getting started</a></li><li><a href="/docs/seo/">SEO &amp; AI search</a></li><li><a href="/docs/deploy/">Deploy</a></li></ul></div>
-<div><h2>Explore</h2><ul><li><a href="/templates/">Templates</a></li><li><a href="/blog/">Blog</a></li><li><a href="/search/">Search</a></li></ul></div>
+<div><h2>Explore</h2><ul><li><a href="/templates/">Templates</a></li><li><a href="/themes/">Themes</a></li><li><a href="/blog/">Blog</a></li><li><a href="/search/">Search</a></li></ul></div>
 <div><h2>Machine-readable</h2><ul><li><a href="/feed.xml">RSS</a> · <a href="/feed.json">JSON Feed</a></li><li><a href="/sitemap.xml">Sitemap</a></li><li><a href="/llms.txt">llms.txt</a></li></ul></div>
 </div></footer>
 </body>
