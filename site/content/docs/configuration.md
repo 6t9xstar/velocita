@@ -25,6 +25,7 @@ export default {
 | `aiCrawlers` | `'allow'` | `'search-only'` or `'block'` AI bots in robots.txt |
 | `locales` | `[lang]` | Extra languages live in `content/<lang>/` |
 | `sections` | `{}` | Per-folder layout and type, e.g. docs |
+| `collections` | `{}` | Per-folder frontmatter schemas, see [content](/docs/content/#collection-schemas) |
 | `budget` | 30/20/20 KB | Page, JS and CSS limits for `velocita check` |
 | `indexNowKey` | none | Enables `--indexnow` pings. 8–128 characters of `a-z A-Z 0-9 -` |
 | `contentSignal` | `false` | Adds a Content-Signal line to robots.txt (Lighthouse reports it as unknown) |

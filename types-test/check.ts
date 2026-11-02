@@ -4,4 +4,5 @@ import { build, defineConfig, renderMarkdown, fromJson, type Config, type BuildR
 const config: Config = defineConfig({ title: 'T', url: 'https://t.example', aiCrawlers: 'search-only', sources: [fromJson({ url: 'https://x/y.json' })] });
 const result: Promise<BuildResult> = build('.', { clean: true, ...config });
 const html: string = renderMarkdown('# hi').html;
-void result; void html;
+const withSchema: Config = { collections: { blog: { schema: { title: 'string', date: 'date', tags: 'string[]?', rating: { type: 'number', required: false, validate: v => v <= 5 || 'at most 5' } } } } };
+void result; void html; void withSchema;

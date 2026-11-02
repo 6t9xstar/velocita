@@ -10,6 +10,20 @@ export interface SectionConfig {
   schemaType?: string;
 }
 
+export type SchemaType = 'string' | 'number' | 'boolean' | 'date' | 'string[]';
+/** A type name (append `?` for optional, e.g. `'string?'`) or a field object. */
+export type SchemaField = SchemaType | `${SchemaType}?` | {
+  type?: SchemaType;
+  /** Default `true`. */
+  required?: boolean;
+  /** Return `true`/`undefined` to accept, `false` or an error message to reject. Runs only when the value is present and has the right type. */
+  validate?: (value: any, data: Record<string, any>) => boolean | string | void;
+};
+export interface CollectionConfig {
+  /** Frontmatter schema; a mismatch fails the build with the file and field. */
+  schema?: Record<string, SchemaField>;
+}
+
 export interface SourceEntry {
   /** Content path, e.g. `blog/my-post.md`. Decides the URL and section. */
   path: string;
@@ -74,6 +88,8 @@ export interface Config {
   imageQuality?: number;
 
   sections?: Record<string, SectionConfig>;
+  /** Per-folder frontmatter schemas, keyed like `sections` (e.g. `blog`). */
+  collections?: Record<string, CollectionConfig>;
   sources?: Source[];
   redirects?: Record<string, string>;
   budget?: { htmlKB?: number; jsKB?: number; cssKB?: number };

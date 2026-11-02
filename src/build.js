@@ -3,6 +3,7 @@ import { join, relative, dirname, extname, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { createHash } from 'node:crypto';
 import { parseFrontmatter } from './frontmatter.js';
+import { validateData } from './schema.js';
 import { renderMarkdown, slugify, escapeHtml as e } from './markdown.js';
 import { seoHead, lintPage, breadcrumbs, VERSION } from './seo.js';
 import { minifyHtml } from './minify.js';
@@ -85,6 +86,7 @@ export async function build(root = '.', opts = {}) {
   for (const source of site.sources || []) {
     for (const e of await source(site)) entries.push({ rel: e.path.replace(/^\//, ''), data: e.data || {}, body: e.body || '', trusted: e.trusted });
   }
+  const schemaErrors = [];
   for (const { file, rel, data, body, trusted } of entries) {
     // Raw HTML is kept for trusted content only: `html: false` in config, or `trusted: false` on a source entry, escapes it.
     const html = site.html !== false && trusted !== false;
@@ -103,6 +105,8 @@ export async function build(root = '.', opts = {}) {
     const prefix = lang === locales[0] ? '' : lang + '/';
     const local = rel.slice(prefix.length);
     const section = local.includes('/') ? prefix + local.split('/')[0] : null;
+    const schema = section && site.collections?.[local.split('/')[0]]?.schema;
+    if (schema) schemaErrors.push(...validateData(data, schema, { file: rel, collection: local.split('/')[0] }));
     const imagePath = src => (src.startsWith('/') ? join(publicDir, src) : file ? join(dirname(file), src) : '');
     const image = src => images.process(src, imagePath(src));
     let rendered;
@@ -135,6 +139,8 @@ export async function build(root = '.', opts = {}) {
       excerpt: rendered.text.slice(0, 155).replace(/\s\S*$/, '') + (rendered.text.length > 155 ? '…' : ''),
     });
   }
+
+  if (schemaErrors.length) throw new Error(`Frontmatter does not match the collection schema:\n  ${schemaErrors.join('\n  ')}`);
 
   // hreflang clusters: pages sharing a translationKey are translations of each other.
   if (site.locales?.length > 1) {
@@ -175,6 +181,13 @@ export async function build(root = '.', opts = {}) {
   if (site.search !== false) for (const lang of site.locales || [site.lang]) {
     const base = lang === (site.locales || [site.lang])[0] ? '/' : `/${lang}/`;
     if (!pages.some(p => p.url === `${base}search/`)) pages.push({ title: site.searchTitle?.[lang] || 'Search', url: `${base}search/`, lang, layout: 'search', noindex: true, html: '', toc: [], text: '', type: 'page' });
+  }
+  // Two pages on one URL would silently overwrite each other.
+  const routes = new Map();
+  for (const p of pages) {
+    const other = routes.get(p.url);
+    if (other) throw new Error(`Duplicate route ${p.url}: ${other.rel || 'a generated ' + other.layout + ' page'} and ${p.rel || 'a generated ' + p.layout + ' page'}. Rename a file or set a different permalink`);
+    routes.set(p.url, p);
   }
   const ogCount = await generateOgImages(pages, site, output);
   const h = { escape: e, date: theme.date, pager: theme.pager, breadcrumbs, layouts: theme.layouts, css: theme.siteCss };
