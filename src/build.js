@@ -83,9 +83,11 @@ export async function build(root = '.', opts = {}) {
     file, rel: relative(contentDir, file).replace(/\\/g, '/'), ...parseFrontmatter(readFileSync(file, 'utf8')),
   }));
   for (const source of site.sources || []) {
-    for (const e of await source(site)) entries.push({ rel: e.path.replace(/^\//, ''), data: e.data || {}, body: e.body || '' });
+    for (const e of await source(site)) entries.push({ rel: e.path.replace(/^\//, ''), data: e.data || {}, body: e.body || '', trusted: e.trusted });
   }
-  for (const { file, rel, data, body } of entries) {
+  for (const { file, rel, data, body, trusted } of entries) {
+    // Raw HTML is kept for trusted content only: `html: false` in config, or `trusted: false` on a source entry, escapes it.
+    const html = site.html !== false && trusted !== false;
     if (data.draft && !site.drafts) continue;
     const path = rel.replace(/\.(md|markdown|html)$/, '').replace(/(^|\/)index$/, '');
     // Permalinks become output paths and href values: keep them inside dist/ and attribute-safe.
@@ -104,20 +106,20 @@ export async function build(root = '.', opts = {}) {
     const imagePath = src => (src.startsWith('/') ? join(publicDir, src) : file ? join(dirname(file), src) : '');
     const image = src => images.process(src, imagePath(src));
     let rendered;
-    if (rel.endsWith('.html')) rendered = { html: body, toc: [], text: body.replace(/<[^>]+>/g, ' '), words: 0, readingTime: 1 };
-    else if (!useCache) rendered = renderMarkdown(body, { siteUrl: site.url, image });
+    if (rel.endsWith('.html') && html) rendered = { html: body, toc: [], text: body.replace(/<[^>]+>/g, ' '), words: 0, readingTime: 1 };
+    else if (!useCache) rendered = renderMarkdown(body, { siteUrl: site.url, image, html });
     else {
       // The image pipeline has side effects (it emits variants and reads dimensions), so the
       // key covers each referenced image's size + mtime, and cache hits replay image() calls.
       const stamps = [...body.matchAll(/!\[[^\]]*\]\(([^)\s]+)/g)].map(([, src]) => {
         try { const st = statSync(imagePath(src)); return `${src}:${st.size}:${st.mtimeMs}`; } catch { return src; }
       });
-      const key = BuildCache.key(file ? dirname(rel) : 'source', body, stamps.join('|'));
+      const key = BuildCache.key(file ? dirname(rel) : 'source', body, stamps.join('|'), html ? '' : 'nohtml');
       let fresh = false;
       rendered = mdCache.get(key, () => {
         fresh = true;
         const used = [];
-        return { ...renderMarkdown(body, { siteUrl: site.url, image: src => (used.push(src), image(src)) }), used };
+        return { ...renderMarkdown(body, { siteUrl: site.url, html, image: src => (used.push(src), image(src)) }), used };
       });
       if (!fresh) for (const src of rendered.used) image(src);
     }

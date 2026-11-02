@@ -3,7 +3,13 @@ import { escapeHtml as e } from './markdown.js';
 
 export const VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
 
-const abs = (site, p) => (/^https?:/.test(p) ? p : site.url.replace(/\/$/, '') + (p.startsWith('/') ? p : '/' + p));
+// Absolute http(s) URL for canonical, og:image, hreflang and JSON-LD. Other schemes and
+// attribute-breaking characters fail the build rather than ship into <head>.
+const abs = (site, p) => {
+  const s = String(p);
+  if (/^[a-z][a-z0-9+.-]*:/i.test(s) && !/^https?:\/\//i.test(s) || /[\s"'<>\\]/.test(s)) throw new Error(`invalid URL ${JSON.stringify(s)} (canonical/image/alternate URLs must be http(s) or site paths)`);
+  return /^https?:/i.test(s) ? s : site.url.replace(/\/$/, '') + (s.startsWith('/') ? s : '/' + s);
+};
 const imageTypes = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', avif: 'image/avif', gif: 'image/gif' };
 const list = v => (Array.isArray(v) ? v : String(v ?? '').split(',')).map(s => String(s).trim()).filter(Boolean);
 

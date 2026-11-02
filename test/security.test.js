@@ -78,3 +78,67 @@ test('dev server answers 503 instead of crashing when the first build fails', as
     assert.equal(status, 503);
   } finally { server.close(); }
 });
+
+test('markdown: script-capable URL schemes are neutralised in links and images', async () => {
+  const { renderMarkdown } = await import('../src/index.js');
+  const evil = ['javascript:alert(1)', 'JaVaScRiPt:alert(1)', 'vbscript:msgbox', 'data:text/html;base64,PHNjcmlwdD4=', 'file:///etc/passwd'];
+  for (const u of evil) {
+    const { html } = renderMarkdown(`[x](${u}) ![y](${u})`);
+    assert.doesNotMatch(html, /(href|src)="(?!#")/i, u);
+  }
+  // Entities are escaped first, so &#106;avascript: stays inert text.
+  assert.match(renderMarkdown('[x](&#106;avascript:alert(1))').html, /href="&amp;#106;/);
+  const ok = renderMarkdown('[a](https://e.com) [b](/p/) [c](#h) [d](mailto:a@b.c) ![i](data:image/png;base64,AA)').html;
+  for (const u of ['https://e.com', '/p/', '#h', 'mailto:a@b.c', 'data:image/png;base64,AA']) assert.ok(ok.includes(`"${u}"`), u);
+});
+
+test('markdown: attribute and tag injection is escaped', async () => {
+  const { renderMarkdown } = await import('../src/index.js');
+  const { html } = renderMarkdown('[x" onclick="alert(1)](/a) ![a" onerror="alert(1)](/i.png) **<img src=x onerror=alert(1)>** `</code><script>`');
+  assert.doesNotMatch(html, /<script|<img src=x| on\w+="/);
+});
+
+test('untrusted content: html: false and trusted: false escape raw HTML', async () => {
+  const { renderMarkdown } = await import('../src/index.js');
+  assert.match(renderMarkdown('<div>ok</div>').html, /^<div>ok<\/div>$/); // trusted default unchanged
+  assert.equal(renderMarkdown('<script>alert(1)</script>', { html: false }).html, '<p>&lt;script&gt;alert(1)&lt;/script&gt;</p>');
+
+  const config = `export default { title: 'T', ogImages: false, cache: false, sources: [async () => [
+    { path: 'blog/cms.md', trusted: false, data: { title: 'CMS' }, body: '<script>alert(1)</script>' },
+    { path: 'raw.html', trusted: false, data: { title: 'Raw' }, body: '<iframe src="https://evil"></iframe>' },
+  ]] };`;
+  const root = site({ 'content/local.md': '---\ntitle: L\n---\n\n<aside>local</aside>\n' }, config);
+  await build(root);
+  const read = f => readFileSync(join(root, 'dist', f), 'utf8');
+  assert.doesNotMatch(read('blog/cms/index.html'), /<script>alert/);
+  assert.doesNotMatch(read('raw/index.html'), /<iframe/);
+  assert.match(read('local/index.html'), /<aside>local<\/aside>/);
+
+  const strict = site({ 'content/x.md': '---\ntitle: X\n---\n\n<script>alert(1)</script>\n' }, "export default { title: 'T', ogImages: false, html: false };");
+  await build(strict);
+  assert.doesNotMatch(readFileSync(join(strict, 'dist/x/index.html'), 'utf8'), /<script>alert/);
+});
+
+test('head URLs (canonical, og:image) must be http(s) or site paths', async () => {
+  for (const [k, v] of [['canonical', 'javascript:alert(1)'], ['image', 'data:text/html,x'], ['canonical', '/a" onload="x']]) {
+    const root = site({ 'content/x.md': `---\ntitle: X\n${k}: ${JSON.stringify(v)}\n---\n\nx\n` });
+    await assert.rejects(build(root), /invalid URL/, `${k}: ${v}`);
+  }
+  const ok = site({ 'content/x.md': '---\ntitle: X\ncanonical: https://other.example/x/\nimage: /og.png\n---\n\nx\n' });
+  await build(ok);
+  assert.match(readFileSync(join(ok, 'dist/x/index.html'), 'utf8'), /<link rel="canonical" href="https:\/\/other\.example\/x\/">/);
+});
+
+test('dev server watches the configured contentDir', async () => {
+  const root = site({ 'pages/index.md': '---\ntitle: H\n---\n\nfirst\n' }, "export default { title: 'T', ogImages: false, contentDir: 'pages' };");
+  const server = await dev(root, 0);
+  const get = () => new Promise((ok, fail) => request({ host: '127.0.0.1', port: server.address().port, path: '/' }, res => {
+    let b = ''; res.on('data', d => (b += d)).on('end', () => ok(b));
+  }).on('error', fail).end());
+  try {
+    writeFileSync(join(root, 'pages/index.md'), '---\ntitle: H\n---\n\nsecond\n');
+    let body = '';
+    for (let i = 0; i < 50 && !/second/.test(body); i++) { await new Promise(r => setTimeout(r, 100)); body = await get(); }
+    assert.match(body, /second/);
+  } finally { server.close(); }
+});

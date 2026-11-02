@@ -11,6 +11,10 @@ All notable changes are listed here. Velocita follows [Semantic Versioning](http
 - `velocita dev` answers 503 instead of crashing when the first build fails, and sends `X-Content-Type-Options: nosniff`.
 - IndexNow's "local site" check now looks at the URL's hostname, so domains like `notlocalhost.com` are no longer skipped.
 - `velocita deploy init cloudflare` quotes the package name in `wrangler.toml`.
+- Markdown links and images neutralise `javascript:`, `vbscript:`, `file:` and non-image `data:` URLs (they become `#`). New export `safeUrl()`.
+- Opt-in escaping of raw HTML for untrusted content: `trusted: false` on a source entry, or `html: false` in config. Trusted local files keep raw HTML (unchanged default). Docs: configuration → Trusted and untrusted HTML.
+- `canonical`, `image` and alternate URLs in `<head>`/JSON-LD must be `http(s)` or site paths without quotes, spaces or `<>`; anything else fails the build.
+- `velocita dev` watches the configured `contentDir`, `layoutsDir` and `publicDir` instead of the default folder names.
 - CI: actions pinned to commit SHAs, `persist-credentials: false`, per-job least-privilege `permissions:`, new CodeQL workflow. `SECURITY.md` documents scope, network calls and provenance.
 
 ### Changed

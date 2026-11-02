@@ -5,6 +5,15 @@
 export const escapeHtml = s => String(s ?? '')
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
+// Link/image URLs: script-capable schemes become "#". data: is allowed only for raster images.
+// Runs on HTML-escaped text, so entities like &#106; can't smuggle a scheme past the check.
+export const safeUrl = u => {
+  const s = String(u).replace(/[\u0000-\u0020\u007f]+/g, '').toLowerCase();
+  if (/^(javascript|vbscript|file):/.test(s)) return '#';
+  if (s.startsWith('data:') && !/^data:image\/(png|gif|jpe?g|webp|avif);/.test(s)) return '#';
+  return u;
+};
+
 export const slugify = s => String(s).toLowerCase().normalize('NFKD')
   .replace(/[̀-ͯ]/g, '').replace(/<[^>]+>/g, '')
   .replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-+|-+$/g, '');
@@ -23,10 +32,12 @@ export function renderMarkdown(md, opts = {}) {
     text = escapeHtml(text);
     text = text.replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+&quot;([^&]*)&quot;)?\)/g, (_, alt, src, title) => {
       const first = imgCount++ === 0 && opts.eagerFirstImage !== false;
-      const img = (opts.image && opts.image(src)) || { src };
+      src = safeUrl(src);
+      const img = (src !== '#' && opts.image && opts.image(src)) || { src };
       return `<img src="${img.src}"${img.srcset ? ` srcset="${img.srcset}" sizes="${img.sizes}"` : ''} alt="${alt}"${title ? ` title="${title}"` : ''}${img.width ? ` width="${img.width}" height="${img.height}"` : ''}${first ? ' fetchpriority="high"' : ' loading="lazy"'} decoding="async">`;
     });
     text = text.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, label, href) => {
+      href = safeUrl(href);
       const ext = /^https?:\/\//.test(href) && !(opts.siteUrl && href.startsWith(opts.siteUrl));
       return `<a href="${href}"${ext ? ' target="_blank" rel="noopener"' : ''}>${label}</a>`;
     });
@@ -94,7 +105,7 @@ export function renderMarkdown(md, opts = {}) {
       continue;
     }
 
-    if (/^<[a-zA-Z!/]/.test(line)) { // raw HTML block
+    if (opts.html !== false && /^<[a-zA-Z!/]/.test(line)) { // raw HTML block (off for untrusted content: escaped as text)
       const buf = [];
       while (i < lines.length && lines[i].trim()) buf.push(lines[i++]);
       out.push(buf.join('\n'));

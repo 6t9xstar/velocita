@@ -15,11 +15,12 @@ const types = {
 export async function dev(root = '.', port = 3000, { host = '127.0.0.1' } = {}) {
   root = resolve(root);
   const clients = new Set();
-  let out;
+  let out, site;
   const rebuild = async () => {
     try {
       const r = await build(root, { dev: true, url: `http://localhost:${port}` });
       out = r.out;
+      site = r.site;
       console.log(`⚡ rebuilt ${r.pages} pages in ${r.ms}ms`);
       for (const c of clients) c.write('data: reload\n\n');
     } catch (err) { console.error('✖ build failed:', err.message); }
@@ -28,7 +29,8 @@ export async function dev(root = '.', port = 3000, { host = '127.0.0.1' } = {}) 
 
   let timer;
   const watchers = [];
-  for (const d of ['content', 'layouts', 'public']) {
+  // Watch the configured folders (contentDir etc.); defaults if the first build failed.
+  for (const d of new Set([site?.contentDir || 'content', site?.layoutsDir || 'layouts', site?.publicDir || 'public'])) {
     const dir = join(root, d);
     if (existsSync(dir)) watchers.push(watch(dir, { recursive: true }, () => { clearTimeout(timer); timer = setTimeout(rebuild, 50); }));
   }

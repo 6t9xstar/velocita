@@ -3,7 +3,7 @@ export { build, loadConfig } from './build.js';
 /** Identity helper: `export default defineConfig({ ... })` gives editors the Config type. */
 export const defineConfig = config => config;
 export { dev } from './dev.js';
-export { renderMarkdown, slugify, escapeHtml } from './markdown.js';
+export { renderMarkdown, slugify, escapeHtml, safeUrl } from './markdown.js';
 export { parseFrontmatter } from './frontmatter.js';
 export { seoHead, jsonLd, lintPage, breadcrumbs } from './seo.js';
 export { minifyHtml, minifyCss } from './minify.js';

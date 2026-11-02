@@ -13,6 +13,8 @@ export interface SectionConfig {
 export interface SourceEntry {
   /** Content path, e.g. `blog/my-post.md`. Decides the URL and section. */
   path: string;
+  /** `false` for untrusted (e.g. CMS) content: raw HTML in the body is escaped, not rendered. */
+  trusted?: boolean;
   data?: Record<string, unknown>;
   /** Markdown body. */
   body?: string;
@@ -63,6 +65,8 @@ export interface Config {
   /** `allow` | `search-only` (blocks training bots) | `block` (also answer bots). */
   aiCrawlers?: 'allow' | 'search-only' | 'block';
   contentSignal?: boolean;
+  /** Render raw HTML in Markdown and .html content (default `true`). `false` escapes it for every page. */
+  html?: boolean;
   /** IndexNow key: 8-128 characters of a-z, A-Z, 0-9 or "-". Written to dist/<key>.txt. */
   indexNowKey?: string;
 
@@ -123,8 +127,10 @@ export interface RenderedMarkdown {
   words: number;
   readingTime: number;
 }
-export function renderMarkdown(md: string, opts?: { siteUrl?: string; eagerFirstImage?: boolean; image?: (src: string) => unknown }): RenderedMarkdown;
+export function renderMarkdown(md: string, opts?: { siteUrl?: string; eagerFirstImage?: boolean; html?: boolean; image?: (src: string) => unknown }): RenderedMarkdown;
 export function slugify(s: string): string;
+/** Returns "#" for javascript:, vbscript:, file: and non-image data: URLs; other URLs unchanged. */
+export function safeUrl(url: string): string;
 export function escapeHtml(s: unknown): string;
 export function parseFrontmatter(src: string): { data: Record<string, any>; body: string };
 export function minifyHtml(html: string): string;
