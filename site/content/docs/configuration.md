@@ -26,7 +26,7 @@ export default {
 | `locales` | `[lang]` | Extra languages live in `content/<lang>/` |
 | `sections` | `{}` | Per-folder layout and type, e.g. docs |
 | `budget` | 30/20/20 KB | Page, JS and CSS limits for `velocita check` |
-| `indexNowKey` | none | Enables `--indexnow` pings |
+| `indexNowKey` | none | Enables `--indexnow` pings. 8–128 characters of `a-z A-Z 0-9 -` |
 | `contentSignal` | `false` | Adds a Content-Signal line to robots.txt (Lighthouse reports it as unknown) |
 | `cache` | `true` | Persistent Markdown render cache in `.velocita-cache/` |
 | `markdownMirror` / `llms` / `feed` | `true` | Markdown copy of each page, llms.txt files, RSS + JSON Feed |

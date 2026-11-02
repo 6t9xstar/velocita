@@ -63,6 +63,7 @@ export interface Config {
   /** `allow` | `search-only` (blocks training bots) | `block` (also answer bots). */
   aiCrawlers?: 'allow' | 'search-only' | 'block';
   contentSignal?: boolean;
+  /** IndexNow key: 8-128 characters of a-z, A-Z, 0-9 or "-". Written to dist/<key>.txt. */
   indexNowKey?: string;
 
   imageWidths?: number[];

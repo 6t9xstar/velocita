@@ -1,10 +1,15 @@
 import { createHash } from 'node:crypto';
 import { readFileSync, existsSync, rmSync, mkdirSync } from 'node:fs';
 import { writeFile, mkdir, unlink } from 'node:fs/promises';
-import { join, dirname } from 'node:path';
+import { join, dirname, resolve, sep } from 'node:path';
 
 const MANIFEST = '.velocita-manifest.json';
 const hash = data => createHash('sha1').update(data).digest('base64url');
+// Normalised output path, or null if it would land outside dir (../, absolute, drive letters).
+const inside = (dir, rel) => {
+  const root = resolve(dir), p = resolve(root, rel);
+  return p.startsWith(root + sep) ? p : null;
+};
 
 // Incremental output: files are collected in memory, then only changed files hit
 // the disk (in parallel), and files that are no longer produced get removed.
@@ -18,14 +23,21 @@ export class Output {
     try { this.prev = existsSync(m) ? JSON.parse(readFileSync(m, 'utf8')) : {}; } catch { this.prev = {}; }
   }
 
+  // Every output path must stay inside dir: a permalink or plugin path like ../x throws.
+  path(rel) {
+    const p = String(rel).replace(/\\/g, '/').replace(/^\/+/, '');
+    if (!inside(this.dir, p)) throw new Error(`refusing to write "${rel}": path escapes the output directory`);
+    return p;
+  }
+
   emit(rel, data) {
-    this.files.set(rel.replace(/\\/g, '/').replace(/^\//, ''), data);
+    this.files.set(this.path(rel), data);
   }
 
   // Emit a file whose content is identified by `key` (e.g. a source hash). If the
   // previous build wrote the same key, `load` is never called: no read, no hash.
   emitLazy(rel, key, load) {
-    this.files.set(rel.replace(/\\/g, '/').replace(/^\//, ''), { lazy: true, key: 'k:' + key, load });
+    this.files.set(this.path(rel), { lazy: true, key: 'k:' + key, load });
   }
 
   async flush(concurrency = 64) {
@@ -37,7 +49,8 @@ export class Output {
       next[rel] = h;
       if (this.prev[rel] !== h) todo.push([rel, data]);
     }
-    const stale = Object.keys(this.prev).filter(rel => !(rel in next));
+    // A hand-edited manifest must not make us delete files outside dist/.
+    const stale = Object.keys(this.prev).filter(rel => !(rel in next) && inside(this.dir, rel));
 
     const dirs = new Set(todo.map(([rel]) => dirname(join(this.dir, rel))));
     await Promise.all([...dirs].map(d => mkdir(d, { recursive: true })));

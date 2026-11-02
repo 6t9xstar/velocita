@@ -4,6 +4,15 @@ All notable changes are listed here. Velocita follows [Semantic Versioning](http
 
 ## [Unreleased]
 
+### Security
+- The output writer refuses paths that escape the output directory, and no longer deletes files outside it when `.velocita-manifest.json` lists them.
+- Invalid `permalink` values (`../`, no leading `/`, spaces, quotes, `<>`, `?`, `#`) fail the build with a clear error instead of writing outside `dist/` or breaking `href` attributes.
+- `indexNowKey` must match the IndexNow format (8–128 of `a-z A-Z 0-9 -`); it is used as a file name.
+- `velocita dev` answers 503 instead of crashing when the first build fails, and sends `X-Content-Type-Options: nosniff`.
+- IndexNow's "local site" check now looks at the URL's hostname, so domains like `notlocalhost.com` are no longer skipped.
+- `velocita deploy init cloudflare` quotes the package name in `wrangler.toml`.
+- CI: actions pinned to commit SHAs, `persist-credentials: false`, per-job least-privilege `permissions:`, new CodeQL workflow. `SECURITY.md` documents scope, network calls and provenance.
+
 ### Changed
 - `velocita`, `create-velocita` and `velocita-theme-paper` 1.1.0 are published on npm. Install docs now use `npm create velocita@latest` and `npm install velocita` instead of `npx github:6t9xstar/velocita`.
 

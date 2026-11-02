@@ -42,6 +42,7 @@ export async function dev(root = '.', port = 3000, { host = '127.0.0.1' } = {}) 
       req.on('close', () => clients.delete(res));
       return;
     }
+    if (!out) { res.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8' }).end('Build failed: see the terminal.'); return; }
     let path;
     try { path = decodeURIComponent(req.url.split('?')[0]); } catch { res.writeHead(400).end('Bad request'); return; }
     let p = join(out, path);
@@ -52,7 +53,7 @@ export async function dev(root = '.', port = 3000, { host = '127.0.0.1' } = {}) 
       const ok = existsSync(p);
       if (!ok) p = join(out, '404.html');
       const body = existsSync(p) ? readFileSync(p) : 'Not found';
-      res.writeHead(ok ? 200 : 404, { 'X-Powered-By': 'Velocita', 'Content-Type': types[extname(p)] || 'application/octet-stream' });
+      res.writeHead(ok ? 200 : 404, { 'X-Powered-By': 'Velocita', 'X-Content-Type-Options': 'nosniff', 'Content-Type': types[extname(p)] || 'application/octet-stream' });
       res.end(body);
     } catch (err) {
       console.error('✖ dev server:', err.message);

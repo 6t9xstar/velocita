@@ -37,7 +37,7 @@ All supported fields:
 | `updated` | Last-modified date for `dateModified`, the sitemap and feeds |
 | `seoTitle` | A longer `<title>`; nav and `<h1>` keep `title` |
 | `keywords` | `<meta name="keywords">` (falls back to tags) |
-| `permalink` | Custom URL, e.g. `/custom/url/` |
+| `permalink` | Custom URL, e.g. `/custom/url/`. Must start with `/`; `..`, spaces, quotes, `<>`, `?` and `#` fail the build |
 | `layout` | Layout name from `layouts/` |
 | `noindex` | `robots: noindex`, and excluded from the sitemap and llms.txt |
 | `translationKey` | Links translations whose paths differ |

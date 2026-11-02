@@ -2,7 +2,7 @@
 // which URLs changed, so they are recrawled in minutes instead of days.
 export async function pingIndexNow(site, urls, { endpoint = 'https://api.indexnow.org/indexnow', fetchImpl = fetch } = {}) {
   if (!site.indexNowKey) return { skipped: 'no indexNowKey in config' };
-  if (/localhost|127\.0\.0\.1/.test(site.url)) return { skipped: 'site.url is local' };
+  if (/^(localhost|127\.\d+\.\d+\.\d+|\[::1\])$|\.localhost$/.test(new URL(site.url).hostname)) return { skipped: 'site.url is local' };
   if (!urls.length) return { skipped: 'no changed URLs' };
   const host = new URL(site.url).host;
   const results = [];

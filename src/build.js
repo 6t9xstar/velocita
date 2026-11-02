@@ -88,6 +88,11 @@ export async function build(root = '.', opts = {}) {
   for (const { file, rel, data, body } of entries) {
     if (data.draft && !site.drafts) continue;
     const path = rel.replace(/\.(md|markdown|html)$/, '').replace(/(^|\/)index$/, '');
+    // Permalinks become output paths and href values: keep them inside dist/ and attribute-safe.
+    const pl = data.permalink;
+    if (pl != null && (typeof pl !== 'string' || !pl.startsWith('/') || /[\s"'<>\\?#]/.test(pl) || /(^|\/)\.\.?(\/|$)/.test(pl))) {
+      throw new Error(`${rel}: invalid permalink ${JSON.stringify(data.permalink)}. Use a site path like /about/ (no "..", spaces, quotes or <>)`);
+    }
     const url = data.permalink || (path ? `/${path.split('/').map(slugify).join('/')}/` : '/');
     // Multilingual: content/<locale>/... for every locale except the first (default) one.
     const locales = site.locales || [site.lang];
@@ -296,6 +301,7 @@ ${indexable.map(p => `<url><loc>${site.url}${p.url}</loc>${(p.alternates || []).
 /_img/*
   Cache-Control: public, max-age=31536000, immutable
 `);
+  if (site.indexNowKey && !/^[A-Za-z0-9-]{8,128}$/.test(site.indexNowKey)) throw new Error('indexNowKey must be 8-128 characters of a-z, A-Z, 0-9 or "-" (IndexNow spec)');
   if (site.indexNowKey) emit(`${site.indexNowKey}.txt`, site.indexNowKey);
 
   await images.flush();

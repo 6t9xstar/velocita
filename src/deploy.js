@@ -51,7 +51,9 @@ export function writeDeployConfig(root, target, { outDir = 'dist' } = {}) {
     files['netlify.toml'] = `[build]\n  command = "npm run build"\n  publish = "${outDir}"\n\n[build.environment]\n  NODE_VERSION = "${node}"\n`;
   }
   if (target === 'cloudflare') {
-    files['wrangler.toml'] = `name = "${JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).name || 'my-site'}"\npages_build_output_dir = "./${outDir}"\ncompatibility_date = "${new Date().toISOString().slice(0, 10)}"\n`;
+    // JSON strings are valid TOML basic strings, so a quote in the name can't inject keys.
+    const name = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).name || 'my-site';
+    files['wrangler.toml'] = `name = ${JSON.stringify(name)}\npages_build_output_dir = ${JSON.stringify('./' + outDir)}\ncompatibility_date = "${new Date().toISOString().slice(0, 10)}"\n`;
   }
   if (target === 'vercel') {
     // Vercel ignores _headers/_redirects, so translate the last build's files into vercel.json.
