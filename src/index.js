@@ -2,7 +2,8 @@ export { build, loadConfig } from './build.js';
 
 /** Identity helper: `export default defineConfig({ ... })` gives editors the Config type. */
 export const defineConfig = config => config;
-export { dev } from './dev.js';
+export { dev, preview, watchTargets } from './dev.js';
+export { doctor } from './doctor.js';
 export { renderMarkdown, slugify, escapeHtml, safeUrl } from './markdown.js';
 export { parseFrontmatter } from './frontmatter.js';
 export { seoHead, jsonLd, lintPage, breadcrumbs } from './seo.js';

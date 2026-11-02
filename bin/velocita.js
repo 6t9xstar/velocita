@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process';
 import { build } from '../src/build.js';
-import { dev } from '../src/dev.js';
+import { dev, preview } from '../src/dev.js';
+import { doctor } from '../src/doctor.js';
 import { pingIndexNow } from '../src/indexnow.js';
 import { createSite, templates, askSite } from '../src/scaffold.js';
 import { checkSite } from '../src/check.js';
@@ -51,6 +52,13 @@ if (cmd === 'build' || cmd === 'audit') {
   if (printCheck(r).failures.length) process.exit(1);
 } else if (cmd === 'dev') {
   await dev(rest[0] || '.', Number(flag('--port')) || 3000, { host: flag('--host') || '127.0.0.1' });
+} else if (cmd === 'preview') {
+  try { await preview(rest[0] || '.', Number(flag('--port')) || 4173, { host: flag('--host') || '127.0.0.1' }); } catch (err) { fail(err.message); }
+} else if (cmd === 'doctor') {
+  const r = await doctor(rest[0] || '.');
+  const icon = { ok: '✔', warn: '⚠', error: '✖' };
+  for (const c of r.checks) (c.status === 'error' ? console.error : console.log)(`${icon[c.status]} ${c.name}: ${c.message}`);
+  if (!r.ok) process.exit(1);
 } else if (cmd === 'new') {
   try {
     // Interactive in a terminal when something is missing; --yes takes the defaults.
@@ -87,6 +95,9 @@ if (cmd === 'build' || cmd === 'audit') {
   velocita new   [dir] [--template ${templates().join('|')}] [--title "My Site"] [--yes]
                                         asks for anything missing when run in a terminal
   velocita dev   [dir] [--port N] [--host H]  dev server with live reload (localhost only unless --host 0.0.0.0)
+  velocita preview [dir] [--port N] [--host H]
+                                        serve the built dist/ as is (no rebuild), port 4173
+  velocita doctor [dir]                 check Node version, config, folders, themes and sharp
   velocita build [dir] [--clean] [--strict] [--check] [--indexnow]
                                         production build to dist/ (incremental)
                                         --strict    fail on broken links/anchors

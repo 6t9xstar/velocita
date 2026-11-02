@@ -39,6 +39,8 @@ velocita dev my-site          # live-reload dev server on http://localhost:3000
 velocita build my-site        # production build to dist/: incremental and cached
 velocita audit my-site        # broken links, orphans, duplicate titles, link suggestions
 velocita check my-site        # page weight, JS/CSS budget, Core Web Vitals hazards
+velocita preview my-site      # serve the built dist/ on http://127.0.0.1:4173, no rebuild
+velocita doctor my-site       # Node version, config, folders, themes, sharp
 velocita deploy init github   # or: cloudflare, netlify, vercel
 ```
 

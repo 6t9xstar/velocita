@@ -10,11 +10,11 @@ _velocita() {
     init) COMPREPLY=($(compgen -W "github cloudflare netlify vercel" -- "$cur")); return ;;
   esac
   if [[ $COMP_CWORD -eq 1 ]]; then
-    COMPREPLY=($(compgen -W "new dev build audit check deploy help" -- "$cur")); return
+    COMPREPLY=($(compgen -W "new dev preview doctor build audit check deploy help" -- "$cur")); return
   fi
   case "$cmd" in
     new)    COMPREPLY=($(compgen -W "--template --title --yes" -- "$cur")) ;;
-    dev)    COMPREPLY=($(compgen -W "--port --host" -- "$cur")) ;;
+    dev|preview) COMPREPLY=($(compgen -W "--port --host" -- "$cur")) ;;
     build)  COMPREPLY=($(compgen -W "--clean --strict --check --indexnow" -- "$cur")) ;;
     deploy) COMPREPLY=($(compgen -W "init cloudflare netlify vercel" -- "$cur")) ;;
   esac
