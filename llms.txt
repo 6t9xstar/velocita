@@ -1,0 +1,15 @@
+# Velocita
+
+> The zero-JavaScript, SEO-first static site framework. Lighthouse 100 by default, built-in GEO for AI search, 0.8 s rebuilds at 3,000 pages.
+
+## Pages
+
+- [Velocita: zero-JS, SEO-first static sites](https://6t9xstar.github.io/velocita/index.md): The zero-JavaScript, SEO-first static site framework. Lighthouse 100 by default, built-in GEO for AI search, 0.8 s rebuilds at 3,000 pages.
+- [Starter templates](https://6t9xstar.github.io/velocita/templates.md): Five production-ready starters (blog, docs, local business, news and portfolio) that pass the SEO audit and performance budget out of the box.
+- [Theme gallery](https://6t9xstar.github.io/velocita/themes.md): Browse Velocita themes. Each one is an npm package with CSS, layouts and config defaults, in light and dark, and your site can still override all of it.
+
+## Blog
+
+- [Velocita 1.0 is here](https://6t9xstar.github.io/velocita/blog/velocita-1-0.md): Starter templates, one-command deploys, a performance budget and a Lighthouse CI gate. Here is what shipped in 1.0.
+- [A practical guide to llms.txt and AI search](https://6t9xstar.github.io/velocita/blog/llms-txt-guide.md): What llms.txt is, what it is not, and the other signals that help AI answer engines read and cite your content.
+- [Why zero JavaScript is a feature](https://6t9xstar.github.io/velocita/blog/zero-js-is-a-feature.md): Content sites rarely need a client-side framework. Here is what shipping no JS by default buys you, and how to add interactivity anyway.

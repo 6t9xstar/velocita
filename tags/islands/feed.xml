@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel>
+<title>Velocita – #islands</title><link>https://6t9xstar.github.io/velocita/tags/islands/</link><description>Articles tagged islands</description><language>en</language>
+<atom:link href="https://6t9xstar.github.io/velocita/tags/islands/feed.xml" rel="self" type="application/rss+xml"/>
+<item><title>Why zero JavaScript is a feature</title><link>https://6t9xstar.github.io/velocita/blog/zero-js-is-a-feature/</link><guid>https://6t9xstar.github.io/velocita/blog/zero-js-is-a-feature/</guid><pubDate>Sat, 24 Oct 2026 00:00:00 GMT</pubDate><description>Content sites rarely need a client-side framework. Here is what shipping no JS by default buys you, and how to add interactivity anyway.</description><category>performance</category><category>islands</category></item>
+</channel></rss>

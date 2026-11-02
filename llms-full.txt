@@ -1,0 +1,588 @@
+# A practical guide to llms.txt and AI search
+URL: https://6t9xstar.github.io/velocita/blog/llms-txt-guide/
+
+## What llms.txt is
+
+`llms.txt` is a proposed Markdown file at the root of a site that lists its most useful pages with short descriptions, so language models can find clean content quickly. Velocita writes it, plus `llms-full.txt` with the full text, on every build.
+
+## What it is not
+
+It is not a ranking factor for Google, and AI crawlers are not required to read it. Treat it as a cheap, helpful extra, not a strategy.
+
+## Signals that matter more
+
+- **Clean, crawlable HTML** with real headings, which every page already has
+- **Markdown copies** of each page, such as [this one](/blog/llms-txt-guide.md), for agents that prefer text
+- **Structured data** that states facts explicitly
+- **A clear crawler policy** with `aiCrawlers: 'allow' | 'search-only' | 'block'`
+
+See the full list in [SEO and AI search](/docs/seo/), or read [why zero JavaScript is a feature](/blog/zero-js-is-a-feature/).
+
+---
+
+# Velocita 1.0 is here
+URL: https://6t9xstar.github.io/velocita/blog/velocita-1-0/
+
+## What's new
+
+Velocita 1.0 completes the road from "fast by default" to "stays fast in production":
+
+- **Starter templates** for a blog, docs and a local business, each scoring Lighthouse 100 in every category
+- **`velocita deploy`** for Cloudflare Pages, Netlify, Vercel and GitHub Pages
+- **`velocita check`**, a browser-free performance budget that runs in milliseconds
+- **A Lighthouse CI gate** written for you, failing CI below 95
+
+## Why a budget matters
+
+Sites rarely start slow; they get slow one dependency at a time. A budget that runs on every build turns "we should keep it fast" into a failing check. Read more in [why zero JavaScript is a feature](/blog/zero-js-is-a-feature/).
+
+## Get it
+
+Follow [Getting started](/docs/), or pick a [template](/templates/).
+
+---
+
+# Why zero JavaScript is a feature
+URL: https://6t9xstar.github.io/velocita/blog/zero-js-is-a-feature/
+
+## The cost you don't see
+
+Every kilobyte of JavaScript is downloaded, parsed, compiled and executed before a page becomes fully responsive. On a mid-range phone that cost shows up directly in Interaction to Next Paint.
+
+## What content sites actually need
+
+Most pages of a blog, docs site or marketing site are text, images and links. HTML already does that perfectly. The few interactive parts, such as search, a copy button or a calculator, can be [islands](/docs/islands/) that load on their own.
+
+## Measuring it
+
+The [home page](/) runs a live meter that shows its own transfer size, JavaScript weight and Largest Contentful Paint in your browser. Then try [the 1.0 release notes](/blog/velocita-1-0/) to see what keeps those numbers low over time.
+
+---
+
+# Configuration
+URL: https://6t9xstar.github.io/velocita/docs/configuration/
+
+## Site
+
+```js
+export default {
+  title: 'My Site',
+  description: 'What the site is about',
+  url: 'https://example.com',   // a path here (/repo) is handled for you
+  lang: 'en',
+  nav: [{ title: 'Blog', url: '/blog/' }],
+};
+```
+
+## Output profiles
+
+`profile` picks which optional files a build writes. The default, `full`, builds the same files as earlier versions.
+
+| Profile | What is emitted |
+|---|---|
+| `minimal` | HTML with meta tags and JSON-LD, sitemap.xml, robots.txt, `_headers`, search index |
+| `standard` | `minimal` plus RSS and JSON feeds (site, sections, tags), OG images, responsive images |
+| `ai` | `standard` plus a Markdown mirror of every page, `llms.txt`, `llms-full.txt` |
+| `full` (default) | Everything. Today this is the same as `ai`; future optional output goes here |
+
+```js
+export default { profile: 'minimal', feed: true }; // explicit options override the profile
+```
+
+Measured with `node bench/bench.mjs 1000,5000 3 minimal,standard,ai,full`. The corpus is the bench's generated Markdown posts with `ogImages: false` and no `sharp`, so the image settings change nothing here. Times are medians of 3 runs on Node 24, i7-12800H, Windows 11. Other work was running on the machine, so treat the times as relative to each other. Astro 7.4 writes 28.5 MB for the same 5,000 posts.
+
+| 5,000 posts | Output | Files | Clean build | No-op rebuild | Edit one post |
+|---|---:|---:|---:|---:|---:|
+| `minimal` | 63.5 MB | 5,740 | 9.1 s | 2.8 s | 3.0 s |
+| `standard` | 69.2 MB | 5,784 | 9.2 s | 3.0 s | 3.1 s |
+| `ai` / `full` | 101.9 MB | 10,787 | 8.7–9.7 s | 2.7–2.9 s | 3.0–3.7 s |
+
+| 1,000 posts | Output | Files | Clean build |
+|---|---:|---:|---:|
+| `minimal` | 12.7 MB | 1,160 | 1.3 s |
+| `standard` | 17.4 MB | 1,204 | 1.4 s |
+| `ai` / `full` | 23.9 MB | 2,207 | 1.5–1.6 s |
+
+Markdown mirrors and `llms-full.txt` account for about a third of the `full` output. Build time barely changes between profiles: rendering the HTML dominates.
+
+## Behaviour
+
+| Option | Default | What it does |
+|---|---|---|
+| `pageSize` | `20` | Items per list page |
+| `aiCrawlers` | `'allow'` | `'search-only'` or `'block'` AI bots in robots.txt |
+| `locales` | `[lang]` | Extra languages live in `content/<lang>/` |
+| `sections` | `{}` | Per-folder layout and type, e.g. docs |
+| `collections` | `{}` | Per-folder frontmatter schemas, see [content](/docs/content/#collection-schemas) |
+| `budget` | 30/20/20 KB | Page, JS and CSS limits for `velocita check` |
+| `indexNowKey` | none | Enables `--indexnow` pings. 8–128 characters of `a-z A-Z 0-9 -` |
+| `contentSignal` | `false` | Adds a Content-Signal line to robots.txt (Lighthouse reports it as unknown) |
+| `html` | `true` | Render raw HTML in Markdown and `.html` content. `false` escapes it on every page |
+| `cache` | `true` | Persistent Markdown render cache in `.velocita-cache/` |
+| `markdownMirror` / `llms` / `feed` | `true` | Markdown copy of each page, llms.txt files, RSS + JSON Feed |
+| `ogImages` | `true` | Generated 1200×630 social cards (needs `sharp`) |
+| `redirects` | `{}` | `{ '/old/': '/new/' }` → `_redirects` 301s + HTML fallbacks |
+
+## Content sources
+
+Pages can come from a headless CMS or any API as well as from `content/`:
+
+```js
+import { defineConfig, fromContentful, fromSanity, fromJson } from 'velocita';
+
+export default defineConfig({
+  sources: [
+    fromContentful({ space: '…', accessToken: process.env.CONTENTFUL_TOKEN, contentType: 'post', section: 'blog' }),
+    fromSanity({ projectId: '…', query: '*[_type=="post"]{title,"slug":slug.current,description,date,body}' }),
+    fromJson({ url: 'https://api.example.com/posts.json', section: 'news' }),
+  ],
+});
+```
+
+A source is just `async (site) => [{ path: 'blog/x.md', data: { title, … }, body: 'markdown' }]`, so any API can become one. Each adapter accepts `map(item)` to fit your content model. Source pages get everything file pages get: SEO tags, feeds, OG images and the audit.
+
+### Trusted and untrusted HTML
+
+Content is trusted by default: raw HTML in Markdown (and `.html` pages) is copied into the page as written, which is what you want for your own files. If editors you don't fully trust can write CMS content, mark those entries `trusted: false` and their raw HTML is escaped as text, while Markdown still renders:
+
+```js
+fromJson({ url: 'https://api.example.com/posts.json', map: item => ({ path: `blog/${item.slug}.md`, data: item, body: item.body, trusted: false }) })
+```
+
+Set `html: false` in config to do the same for every page. In all modes, Markdown links and images with `javascript:`, `vbscript:`, `file:` or non-image `data:` URLs become `#`, and `canonical`, `image` and other head URLs must be `http(s)` or site paths, or the build fails.
+
+Next: write your own [layouts](/docs/layouts/).
+
+---
+
+# Content and routing
+URL: https://6t9xstar.github.io/velocita/docs/content/
+
+## Files become URLs
+
+```
+content/index.md          → /
+content/about.md          → /about/
+content/blog/hello.md     → /blog/hello/
+content/hi/about.md       → /hi/about/   (second locale)
+```
+
+A folder is a collection. Dated files inside it become articles with an automatic index page, tag pages, feeds and pagination.
+
+## Frontmatter
+
+```yaml
+---
+title: Why speed matters        # under 60 characters
+description: One-line summary   # under 160 characters
+date: 2026-10-20
+tags: [seo, performance]
+image: /og/custom.png           # otherwise a card is generated
+aliases: [/old-url/]            # 301 redirects
+draft: true                     # excluded from production
+---
+```
+
+All supported fields:
+
+| Field | What it does |
+|---|---|
+| `updated` | Last-modified date for `dateModified`, the sitemap and feeds |
+| `seoTitle` | A longer `<title>`; nav and `<h1>` keep `title` |
+| `keywords` | `<meta name="keywords">` (falls back to tags) |
+| `permalink` | Custom URL, e.g. `/custom/url/`. Must start with `/`; `..`, spaces, quotes, `<>`, `?` and `#` fail the build |
+| `layout` | Layout name from `layouts/` |
+| `noindex` | `robots: noindex`, and excluded from the sitemap and llms.txt |
+| `translationKey` | Links translations whose paths differ |
+| `faq` | `- Question? :: Answer.` list → FAQPage JSON-LD |
+| `schema: HowTo` | With `steps` (`- Name :: What to do.`) and `totalTime` (e.g. `PT5M`) |
+| `schema: Product` | With `price`, `currency`, `brand`, `sku`, `rating`, `reviewCount`, `availability` |
+| `video` | VideoObject JSON-LD, with `videoThumbnail` and `videoDuration` |
+
+Frontmatter is a YAML subset: strings, numbers, booleans, `[a, b]` arrays, `- item` lists, and nested maps and lists by indentation:
+
+```yaml
+author:
+  name: Ada
+  links:
+    - https://ada.example
+sponsors:
+  - name: Acme
+    tier: gold
+```
+
+## Collection schemas
+
+Give a folder a schema in `velocita.config.js` and every file in it is checked at build time:
+
+```js
+export default {
+  collections: {
+    blog: {
+      schema: {
+        title: 'string',              // required
+        date: 'date',
+        tags: 'string[]?',            // ? = optional
+        draft: 'boolean?',
+        rating: { type: 'number', required: false, validate: v => (v >= 1 && v <= 5) || 'must be 1–5' },
+      },
+    },
+  },
+};
+```
+
+Types are `string`, `number`, `boolean`, `date` (a parseable date) and `string[]`. `validate(value, data)` runs when the value is present; return `false` or a message to reject it. Fields not in the schema are allowed. All mismatches are reported together and fail the build:
+
+```
+Frontmatter does not match the collection schema:
+  blog/hello.md: field "date" is required (date) by collections.blog.schema
+  blog/old.md: field "rating": must be 1–5
+```
+
+Two pages with the same URL (for example `blog/Hello.md` and `blog/hello.md`, or a clashing `permalink`) also fail the build, naming both files.
+
+## Images
+
+Write `![Alt text](photo.jpg)` with the file next to the Markdown. Velocita copies it, adds width and height, and creates WebP sizes when `sharp` is installed.
+
+Continue with [configuration](/docs/configuration/).
+
+---
+
+# Deploy
+URL: https://6t9xstar.github.io/velocita/docs/deploy/
+
+## Generate host config
+
+```bash
+velocita deploy init cloudflare   # wrangler.toml
+velocita deploy init netlify      # netlify.toml
+velocita deploy init vercel       # vercel.json with headers and redirects
+velocita deploy init github       # GitHub Actions workflow
+```
+
+Each also writes `lighthouserc.json`, which fails CI if any Lighthouse category drops below 95.
+
+## Publish
+
+```bash
+velocita deploy cloudflare
+```
+
+This builds, stops on broken links or a blown performance budget, and then publishes with the host's own CLI.
+
+## Subfolders
+
+If `url` has a path, such as `https://user.github.io/repo`, every internal link is prefixed for you. This site is deployed that way.
+
+Back to [Getting started](/docs/).
+
+---
+
+# Multilingual sites
+URL: https://6t9xstar.github.io/velocita/docs/i18n/
+
+## Configure locales
+
+```js
+export default {
+  lang: 'en',
+  locales: ['en', 'hi'],
+  nav: { en: [/* … */], hi: [/* … */] },
+};
+```
+
+## Add translations
+
+`content/about.md` and `content/hi/about.md` are linked as translations automatically. For different file names, give both the same `translationKey`.
+
+Every translated page gets `hreflang` tags with `x-default`, sitemap alternates, the right `<html lang>`, and a switcher in the header. Feeds and search work per language.
+
+Last step: [deploy your site](/docs/deploy/).
+
+---
+
+# Getting started
+URL: https://6t9xstar.github.io/velocita/docs/
+
+## Requirements
+
+- Node.js 20 or newer
+- Optional: `sharp` for responsive images and generated social cards
+
+## Create a site
+
+```bash
+npm create velocita@latest my-site -- --template blog
+cd my-site
+npm install
+npm run dev
+```
+
+Open `http://localhost:3000`. Edit any file in `content/`, `layouts/`, `public/` (or the folders `contentDir`, `layoutsDir` and `publicDir` point to), `velocita.config.js` or a local theme, and the page reloads. If a rebuild fails, the server keeps running: the error is printed in the terminal and shown in the browser, and the page reloads once you fix it.
+
+Something not working? `npx velocita doctor` checks your Node.js version, that the config and themes load, that the configured folders exist, and whether `sharp` is installed. It exits with code 1 if anything is broken.
+
+## Build for production
+
+```bash
+npm run build      # velocita build --strict
+npx velocita check # performance budget
+```
+
+The output in `dist/` is plain static files. Rebuilds are incremental: only files whose content changed are written.
+
+To look at the production build before deploying, run `npx velocita preview`. It serves `dist/` exactly as built on `http://127.0.0.1:4173` (change with `--port` and `--host`), without rebuilding or live reload.
+
+## Next steps
+
+Learn how [content is organised](/docs/content/), then see every [configuration option](/docs/configuration/).
+
+---
+
+# Islands and search
+URL: https://6t9xstar.github.io/velocita/docs/islands/
+
+## Write an island
+
+```js
+// islands/counter.js
+export default function counter(el, { start = 0 }) {
+  el.innerHTML = '<button>0</button>';
+}
+```
+
+## Use it in Markdown
+
+```html
+<v-island name="counter" load="visible" props='{"start":3}'>Fallback HTML</v-island>
+```
+
+| `load` | Loads when |
+|---|---|
+| `visible` | It scrolls into view (default) |
+| `idle` | The browser is idle |
+| `interaction` | First hover, focus or touch |
+| `load` | Immediately |
+
+Only pages with an island get the small loader. The install box and the live performance meter on the [home page](/) are islands.
+
+## Search
+
+`/search/` is generated for every language. It is a small island over a prebuilt index, so it needs no server or third-party service.
+
+Next: [multilingual sites](/docs/i18n/).
+
+---
+
+# Layouts
+URL: https://6t9xstar.github.io/velocita/docs/layouts/
+
+## A layout is a function
+
+```js
+// layouts/post.js
+export default ({ page, site, articles, h }) => `
+  <article>
+    <h1>${h.escape(page.title)}</h1>
+    ${page.html}
+  </article>`;
+```
+
+Files in `layouts/` replace the built-in `page`, `post`, `list`, `search` and `notFound` layouts, or add new ones you choose with `layout:` in frontmatter.
+
+## Helpers
+
+| Helper | Use |
+|---|---|
+| `h.escape(text)` | Escape text for HTML |
+| `h.date(date, lang)` | Accessible `<time>` element |
+| `h.pager(page.pagination)` | Pagination links |
+| `h.css(extra)` | Base theme CSS plus yours, minified |
+
+## The shell
+
+`layouts/shell.js` controls the whole document. This website uses a custom shell for its header and footer.
+
+See [SEO and AI search](/docs/seo/) for what goes into `<head>` automatically.
+
+---
+
+# SEO and AI search
+URL: https://6t9xstar.github.io/velocita/docs/seo/
+
+## On every page
+
+- Title, description, canonical and robots meta
+- Open Graph and Twitter cards with a generated 1200×630 image
+- JSON-LD: WebSite, BreadcrumbList, BlogPosting, plus FAQPage, HowTo, Product, VideoObject and LocalBusiness when you use them
+
+## Site-wide files
+
+`sitemap.xml` with hreflang alternates, `robots.txt`, RSS and JSON feeds, `llms.txt`, `llms-full.txt`, and a `.md` copy of every page for AI agents.
+
+## The audit
+
+```bash
+velocita audit
+```
+
+Reports broken internal links and `#anchors`, orphan pages, duplicate titles and descriptions, and suggests related posts to link. `velocita build --strict` fails on errors.
+
+## IndexNow
+
+Set `indexNowKey`, then `velocita build --indexnow` notifies Bing, Yandex and others about only the URLs that changed.
+
+Next: add interactivity with [islands](/docs/islands/).
+
+---
+
+# Themes
+URL: https://6t9xstar.github.io/velocita/docs/themes/
+
+Browse the [theme gallery](/themes/) to see each theme in light and dark.
+
+## Use a theme
+
+```sh
+npm install velocita-theme-paper
+```
+
+```js
+// velocita.config.js
+export default { theme: 'velocita-theme-paper' };
+```
+
+`theme` can be an npm package name, a local file (`'./themes/brand.js'`), an inline object, or an array of these. Later themes override earlier ones.
+
+## What wins
+
+| Setting | Order (last wins) |
+|---|---|
+| Config | Velocita defaults → theme `config` → your `velocita.config.js` |
+| Layouts | built-in → theme `layouts` → your `layouts/` folder |
+| CSS | built-in theme CSS → theme `css` → your `css` |
+
+## Write a theme
+
+A theme is a module whose default export is an object:
+
+```js
+export default {
+  name: 'brand',
+  config: { themeColor: '#9c3d10', og: { accent: '#9c3d10' } }, // defaults the site can override
+  css: `:root{--accent:#9c3d10} body{font-family:Georgia,serif}`,
+  layouts: {
+    // Same signature as files in layouts/: { page, site, pages, articles, sections, tags, h }
+    list: ({ page, site, h }) => `<h1>${h.escape(page.title)}</h1>
+      <ul>${page.items.map(p => `<li><a href="${p.url}">${h.escape(p.title)}</a></li>`).join('')}</ul>
+      ${h.pager(page.pagination)}`,
+  },
+  // shell: ({ page, site, head, content }) => '<!doctype html>…', // optional: replace the whole page shell
+};
+```
+
+To share it, publish it to npm as `velocita-theme-<name>` with the `velocita-theme` keyword and `velocita` as a peer dependency. [`packages/velocita-theme-paper`](https://github.com/6t9xstar/velocita/tree/main/packages/velocita-theme-paper) is a complete example.
+
+Layouts must escape user content with `h.escape`, and should keep pages free of scripts so the zero-JS guarantee and `velocita check` still hold.
+
+---
+
+# Starter templates
+URL: https://6t9xstar.github.io/velocita/templates/
+
+<div class="prose">
+<p class="sub">Start from a template that already passes the audit, the performance budget and Lighthouse CI. Every one is plain Markdown and JavaScript you can change.</p>
+</div>
+
+<div class="grid">
+<div class="card"><div class="icon" aria-hidden="true">✍️</div><h2 style="font-size:1.08rem;margin:.5rem 0 .35rem">Blog</h2><p>Home, about, posts with tags, RSS and JSON feeds, search and an FAQ example.</p><p><code>--template blog</code></p></div>
+<div class="card"><div class="icon" aria-hidden="true">📚</div><h2 style="font-size:1.08rem;margin:.5rem 0 .35rem">Docs</h2><p>Sidebar ordered by frontmatter, previous/next links, on-page contents and search.</p><p><code>--template docs</code></p></div>
+<div class="card"><div class="icon" aria-hidden="true">🏪</div><h2 style="font-size:1.08rem;margin:.5rem 0 .35rem">Local business</h2><p>Hero, service cards, pricing and opening hours, with LocalBusiness structured data.</p><p><code>--template business</code></p></div>
+<div class="card"><div class="icon" aria-hidden="true">📰</div><h2 style="font-size:1.08rem;margin:.5rem 0 .35rem">News / magazine</h2><p>A front page with a lead story and section blocks, news and opinion sections, and NewsArticle structured data.</p><p><code>--template news</code></p></div>
+<div class="card"><div class="icon" aria-hidden="true">🎨</div><h2 style="font-size:1.08rem;margin:.5rem 0 .35rem">Agency / portfolio</h2><p>A hero, stats, case studies with results tables, services and contact, with CreativeWork structured data.</p><p><code>--template portfolio</code></p></div>
+</div>
+
+## Create a site
+
+```bash
+npm create velocita@latest                # asks for folder, template and title
+npm create velocita@latest my-site -- --template docs --title "Acme Docs"
+cd my-site
+npm install
+npm run dev
+```
+
+## Measured, not promised
+
+Each template was built and run through Lighthouse CI on every page:
+
+| Template | Performance | Accessibility | Best practices | SEO |
+|---|---|---|---|---|
+| Blog | 100 | 100 | 100 | 100 |
+| Docs | 100 | 100 | 100 | 100 |
+| Local business | 100 | 100 | 100 | 100 |
+| News / magazine | 100 | 100 | 100 | 100 |
+| Agency / portfolio | 100 | 100 | 100 | 100 |
+
+News and portfolio were measured on November 1, 2026 across all 16 pages of each starter (`@lhci/cli` 0.14, Lighthouse's default mobile emulation with simulated throttling). Largest Contentful Paint stayed under 1.3 s and layout shift under 0.005 on every page. Pages marked `noindex` (404, search, and tag pages with a single post) score 66 for SEO by design, because Lighthouse counts `noindex` against them.
+
+Next, read [Getting started](/docs/) or learn how to [deploy](/docs/deploy/).
+
+---
+
+# Theme gallery
+URL: https://6t9xstar.github.io/velocita/themes/
+
+<div class="prose">
+<p class="sub">A theme is a plain npm package: CSS, optional layouts and config defaults. Install one, add a line to your config, and your site still wins on every setting it defines itself.</p>
+</div>
+
+<div class="gallery">
+
+<article class="theme">
+<div class="previews">
+<figure class="mock" style="--b:#ffffff;--f:#1a1a1a;--m:#5c5c5c;--a:#0b57d0;--l:#e5e5e5;font-family:system-ui,sans-serif"><div class="bar"><b>My Site</b><span>Blog · About</span></div><div class="body"><strong>Why speed matters</strong><span class="meta">Oct 20 · 4 min read</span><span>Fast pages rank better and convert better.</span><span class="link">Read more →</span></div><figcaption>Light</figcaption></figure>
+<figure class="mock" style="--b:#0f1115;--f:#e8e8e8;--m:#a0a0a0;--a:#8ab4f8;--l:#2a2d33;font-family:system-ui,sans-serif"><div class="bar"><b>My Site</b><span>Blog · About</span></div><div class="body"><strong>Why speed matters</strong><span class="meta">Oct 20 · 4 min read</span><span>Fast pages rank better and convert better.</span><span class="link">Read more →</span></div><figcaption>Dark</figcaption></figure>
+</div>
+<h2>Default</h2>
+<p>The built-in theme. A clean system-font layout, about 3 KB of inlined CSS, with every template's layouts included.</p>
+<p class="tags"><span>Built in</span><span>Sans-serif</span><span>Light + dark</span></p>
+<p><code>No install needed</code></p>
+</article>
+
+<article class="theme">
+<div class="previews">
+<figure class="mock" style="--b:#fbf8f3;--f:#24211c;--m:#6b645a;--a:#9c3d10;--l:#e6dfd3;font-family:Charter,'Bitstream Charter','Sitka Text',Cambria,Georgia,serif"><div class="bar"><b>My Site</b><span>Blog · About</span></div><div class="body"><strong>Why speed matters</strong><span class="meta">Oct 20 · 4 min read</span><span>Fast pages rank better and convert better.</span><span class="link">Read more →</span></div><figcaption>Light</figcaption></figure>
+<figure class="mock" style="--b:#191714;--f:#ece6dc;--m:#a59c8f;--a:#f0a46c;--l:#33302a;font-family:Charter,'Bitstream Charter','Sitka Text',Cambria,Georgia,serif"><div class="bar"><b>My Site</b><span>Blog · About</span></div><div class="body"><strong>Why speed matters</strong><span class="meta">Oct 20 · 4 min read</span><span>Fast pages rank better and convert better.</span><span class="link">Read more →</span></div><figcaption>Dark</figcaption></figure>
+</div>
+<h2>Paper</h2>
+<p>A calm serif reading theme on warm paper tones, with a narrow column and card-style post lists. Made for essays and long-form blogs.</p>
+<p class="tags"><span>npm</span><span>Serif</span><span>Light + dark</span></p>
+<p><code>npm i velocita-theme-paper</code> · <a href="https://www.npmjs.com/package/velocita-theme-paper" rel="noopener">npm page</a></p>
+</article>
+
+</div>
+
+## Use a theme
+
+```bash
+npm install velocita-theme-paper
+```
+
+```js
+// velocita.config.js
+export default {
+  theme: 'velocita-theme-paper',
+  // Anything you set here overrides the theme's defaults.
+};
+```
+
+The previews above use each theme's real colors and fonts. Theme CSS is inlined like the default theme's, so switching themes never adds a render-blocking request.
+
+## Publish your own
+
+1. Export a plain object `{ name, config, css, layouts }` from your package's `index.js`. See the [themes guide](/docs/themes/) for every field.
+2. Name the package `velocita-theme-<name>` and add the `velocita-theme` keyword.
+3. Check that a site using it still passes `velocita audit` and `velocita check`.
+4. Publish it to npm, then [open an issue on GitHub](https://github.com/6t9xstar/velocita/issues/new?title=Theme%20gallery%3A%20) to get it listed here.

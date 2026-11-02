@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel>
+<title>Velocita – #release</title><link>https://6t9xstar.github.io/velocita/tags/release/</link><description>Articles tagged release</description><language>en</language>
+<atom:link href="https://6t9xstar.github.io/velocita/tags/release/feed.xml" rel="self" type="application/rss+xml"/>
+<item><title>Velocita 1.0 is here</title><link>https://6t9xstar.github.io/velocita/blog/velocita-1-0/</link><guid>https://6t9xstar.github.io/velocita/blog/velocita-1-0/</guid><pubDate>Sun, 01 Nov 2026 00:00:00 GMT</pubDate><description>Starter templates, one-command deploys, a performance budget and a Lighthouse CI gate. Here is what shipped in 1.0.</description><category>release</category><category>performance</category></item>
+</channel></rss>

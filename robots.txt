@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+
+
+Sitemap: https://6t9xstar.github.io/velocita/sitemap.xml
+# LLM-friendly index: https://6t9xstar.github.io/velocita/llms.txt
