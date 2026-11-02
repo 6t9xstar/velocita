@@ -9,4 +9,12 @@ pnpm create velocita my-site
 bun create velocita my-site
 ```
 
-Templates: `blog`, `docs`, `business`. With no arguments in a terminal, it asks for the folder and template.
+Templates: `blog`, `docs`, `business`, `news`, `portfolio`. With no arguments in a terminal, it asks for the folder, template and title; `--yes` skips the questions.
+
+Then:
+
+```sh
+cd my-site
+npm install
+npm run dev
+```

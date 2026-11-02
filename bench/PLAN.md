@@ -66,7 +66,7 @@ I started a second full-suite run (1k/5k/20k) but stopped it partway. The machin
 | SSR / API endpoints / middleware | `output: 'server'`, adapters, actions, sessions | Static only; Strada separate | **Large** |
 | View transitions | `<ClientRouter />` | Speculation Rules prerender | Small (cross-document view transitions are CSS-only) |
 | Integrations / plugin API | Hooks, 500+ integrations | None | **Large**; ecosystem can't be matched quickly |
-| Distribution | `npm create astro` | Not on npm | **Blocking** for adoption |
+| Distribution | `npm create astro` | `npm create velocita` | Parity |
 | SEO/GEO out of the box | Plugins | JSON-LD, llms.txt, MD mirrors, audit, IndexNow, OG, budgets | **Velocita wins** |
 | Build speed ≤ ~5k pages | ~11–14 s | 1–6 s | **Velocita wins** |
 | Runtime dependencies | ~200 packages | 0 | **Velocita wins** |

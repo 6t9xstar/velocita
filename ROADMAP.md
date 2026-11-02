@@ -61,8 +61,8 @@ Goal: the fastest, most search- and AI-discoverable framework for content websit
 - Theme packages shareable on npm (`theme: 'velocita-theme-…'`), with `velocita-theme-paper` as the reference theme
 - `velocita new` / `npm create velocita` interactive prompts
 - Release pipeline for npm with provenance (`velocita`, `create-velocita`, `velocita-theme-paper`)
+- First npm publish: `velocita`, `create-velocita` and `velocita-theme-paper` 1.1.0 are on npm
 
 ## 🔜 Next
-- First npm publish (tag `v1.1.0` once the `NPM_TOKEN` secret is set)
 - Lighthouse CI numbers for the news and portfolio templates
 - A theme gallery page on the website

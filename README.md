@@ -5,6 +5,8 @@
 
 <p align="center">
   <a href="https://github.com/6t9xstar/velocita/actions/workflows/ci.yml"><img src="https://github.com/6t9xstar/velocita/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://www.npmjs.com/package/velocita"><img src="https://img.shields.io/npm/v/velocita" alt="npm version"></a>
+  <a href="https://www.npmjs.com/package/velocita"><img src="https://img.shields.io/npm/dm/velocita" alt="npm downloads"></a>
   <img src="https://img.shields.io/github/stars/6t9xstar/velocita" alt="stars">
   <img src="https://img.shields.io/badge/runtime_dependencies-0-success" alt="zero dependencies">
   <img src="https://img.shields.io/badge/JS_shipped-0_KB-success" alt="zero JS by default">
@@ -47,17 +49,10 @@ The official website, [6t9xstar.github.io/velocita](https://6t9xstar.github.io/v
 Requires **Node.js 20 or later** on Linux, macOS or Windows.
 
 ```sh
-# scaffold a new site straight from GitHub (works today)
-npx github:6t9xstar/velocita new my-site --template blog
+# scaffold a new site
+npm create velocita@latest my-site      # or: pnpm create velocita / bun create velocita
 
 # add to an existing project
-npm install --save-dev github:6t9xstar/velocita
-```
-
-After the first npm release, these will also work:
-
-```sh
-npm create velocita@latest my-site      # or: pnpm create velocita / bun create velocita
 npm install --save-dev velocita
 ```
 
@@ -66,7 +61,7 @@ Optional: `npm install sharp` enables responsive WebP images, auto-generated OG 
 ## Quick start
 
 ```sh
-npx github:6t9xstar/velocita new my-site --template blog
+npm create velocita@latest my-site -- --template blog
 cd my-site
 npm install
 npm run dev

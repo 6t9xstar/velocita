@@ -18,8 +18,8 @@ description: Five production-ready starters (blog, docs, local business, news an
 ## Create a site
 
 ```bash
-npx github:6t9xstar/velocita new          # asks for folder, template and title
-npx github:6t9xstar/velocita new my-site --template docs --title "Acme Docs"
+npm create velocita@latest                # asks for folder, template and title
+npm create velocita@latest my-site -- --template docs --title "Acme Docs"
 cd my-site
 npm install
 npm run dev

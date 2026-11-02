@@ -7,13 +7,13 @@ order: 1
 
 ## Requirements
 
-- Node.js 18 or newer
+- Node.js 20 or newer
 - Optional: `sharp` for responsive images and generated social cards
 
 ## Create a site
 
 ```bash
-npx github:6t9xstar/velocita new my-site --template blog
+npm create velocita@latest my-site -- --template blog
 cd my-site
 npm install
 npm run dev

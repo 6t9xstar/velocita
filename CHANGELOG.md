@@ -4,6 +4,9 @@ All notable changes are listed here. Velocita follows [Semantic Versioning](http
 
 ## [Unreleased]
 
+### Changed
+- `velocita`, `create-velocita` and `velocita-theme-paper` 1.1.0 are published on npm. Install docs now use `npm create velocita@latest` and `npm install velocita` instead of `npx github:6t9xstar/velocita`.
+
 ## [1.1.0] - 2026-11-01
 
 ### Added
