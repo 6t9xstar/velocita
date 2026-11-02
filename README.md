@@ -117,7 +117,7 @@ Velocita and Astro 7.4 built the same 5,000-post Markdown corpus, rendering the 
 | Post page HTML (gzipped) | 3.4 KB | **1.7 KB** |
 | Total output | 101.9 MB | **28.5 MB** |
 
-Velocita's pages and output are larger because they carry JSON-LD, Markdown mirrors, `llms-full.txt` and per-tag feeds; the Astro site has none of these. Methodology, raw data and caveats are in [`bench/PLAN.md`](bench/PLAN.md). Reproduce with:
+Velocita's pages and output are larger because they carry JSON-LD, Markdown mirrors, `llms-full.txt` and per-tag feeds; the Astro site has none of these. With `profile: 'minimal'` the same 5,000 posts produce 63.5 MB (see [output profiles](https://6t9xstar.github.io/velocita/docs/configuration/#output-profiles)). Methodology, raw data and caveats are in [`bench/PLAN.md`](bench/PLAN.md). Reproduce with:
 
 ```sh
 node bench/bench.mjs 1000,5000 3

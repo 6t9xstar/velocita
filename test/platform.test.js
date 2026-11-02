@@ -103,3 +103,30 @@ test('search: page per locale, noindex, excluded from sitemap, index has languag
 
 import { readdirSync } from 'node:fs';
 function readdirIslands(out) { return readdirSync(join(out, '_islands')); }
+
+test('profiles: minimal drops feeds and AI files, explicit options win, unknown profile fails', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'velocita-profile-'));
+  try {
+    mkdirSync(join(dir, 'content/blog'), { recursive: true });
+    writeFileSync(join(dir, 'content/index.md'), '---\ntitle: Home\ndescription: d\n---\n\nHi');
+    writeFileSync(join(dir, 'content/blog/post.md'), '---\ntitle: Post\ndescription: d2\ndate: 2026-01-01\n---\n\nBody');
+    const has = (r, f) => existsSync(join(r.out, f));
+    let r = await build(dir, { profile: 'minimal', clean: true });
+    for (const f of ['index.html', 'blog/post/index.html', 'sitemap.xml', 'robots.txt']) assert.ok(has(r, f), f);
+    for (const f of ['feed.xml', 'feed.json', 'llms.txt', 'llms-full.txt', 'blog/post.md']) assert.ok(!has(r, f), f);
+    const html = readFileSync(join(r.out, 'blog/post/index.html'), 'utf8');
+    assert.match(html, /rel="canonical"/);
+    assert.doesNotMatch(html, /feed\.xml/);
+    assert.doesNotMatch(readFileSync(join(r.out, 'robots.txt'), 'utf8'), /llms/);
+    r = await build(dir, { profile: 'standard', clean: true });
+    assert.ok(has(r, 'feed.xml') && !has(r, 'llms.txt') && !has(r, 'blog/post.md'));
+    r = await build(dir, { profile: 'ai', clean: true });
+    assert.ok(has(r, 'feed.xml') && has(r, 'llms-full.txt') && has(r, 'blog/post.md'));
+    r = await build(dir, { profile: 'minimal', llms: true, clean: true });
+    assert.ok(has(r, 'llms.txt') && !has(r, 'feed.xml'));
+    r = await build(dir, { clean: true });
+    assert.equal(r.site.profile, 'full');
+    assert.ok(has(r, 'feed.xml') && has(r, 'llms.txt') && has(r, 'blog/post.md'));
+    await assert.rejects(build(dir, { profile: 'tiny' }), /Unknown profile/);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
