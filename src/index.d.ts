@@ -41,6 +41,15 @@ export interface Config {
   outDir?: string;
   layoutsDir?: string;
 
+  /**
+   * Which optional artifacts to emit (default `full`). Explicit `feed`, `ogImages`, `images`,
+   * `markdownMirror` and `llms` options override the profile.
+   * - `minimal`: HTML, sitemap, robots.txt, meta tags and JSON-LD
+   * - `standard`: + RSS/JSON feeds, OG images, responsive images
+   * - `ai` / `full`: + Markdown mirrors, llms.txt, llms-full.txt
+   */
+  profile?: Profile;
+  images?: boolean;
   minify?: boolean;
   /** Persistent render cache in `.velocita-cache/` (default true). */
   cache?: boolean;
@@ -87,6 +96,10 @@ export interface Config {
 
 export type ResolvedConfig = Required<Pick<Config, 'title' | 'description' | 'url' | 'lang' | 'contentDir' | 'publicDir' | 'outDir' | 'layoutsDir'>> & Config & { root: string; base: string };
 
+export type Profile = 'minimal' | 'standard' | 'ai' | 'full';
+
+export const PROFILES: Record<Profile, { feed: boolean; ogImages: boolean; images: boolean; markdownMirror: boolean; llms: boolean }>;
+
 export interface BuildOptions extends Config {
   /** Delete the output directory first. */
   clean?: boolean;
@@ -111,7 +124,7 @@ export interface BuildResult {
 export function defineConfig(config: Config): Config;
 
 export function build(root?: string, opts?: BuildOptions): Promise<BuildResult>;
-export function loadConfig(root: string): Promise<ResolvedConfig>;
+export function loadConfig(root: string, overrides?: { profile?: Profile }): Promise<ResolvedConfig>;
 /** The underlying node:http Server (typed minimally so @types/node is not required). */
 export interface DevServer { address(): { address: string; port: number } | string | null; close(callback?: (err?: Error) => void): unknown }
 export function dev(root?: string, port?: number, opts?: { host?: string }): Promise<DevServer>;

@@ -25,19 +25,33 @@ const walk = dir => !existsSync(dir) ? [] : readdirSync(dir).flatMap(f => {
 
 const toDate = v => (v ? new Date(v) : null);
 
-export async function loadConfig(root) {
+// Output profiles: which optional artifacts a build emits. Explicit options always win.
+export const PROFILES = {
+  minimal: { feed: false, ogImages: false, images: false, markdownMirror: false, llms: false },
+  standard: { feed: true, ogImages: true, images: true, markdownMirror: false, llms: false },
+  ai: { feed: true, ogImages: true, images: true, markdownMirror: true, llms: true },
+  full: { feed: true, ogImages: true, images: true, markdownMirror: true, llms: true },
+};
+
+export async function loadConfig(root, overrides = {}) {
   const file = join(root, 'velocita.config.js');
   const user = existsSync(file) ? (await import(pathToFileURL(file).href + `?t=${Date.now()}`)).default : {};
   // Precedence: built-in defaults < theme config < the site's own config. Theme CSS goes before site CSS.
   const themes = await loadThemes(root, user.theme);
   const css = [...themes.map(t => t.css), user.css].filter(Boolean).join('\n');
+  const themeConfig = Object.assign({}, ...themes.map(t => t.config));
+  // Profile precedence: build option > site config > theme config > `full`.
+  const profile = overrides.profile || user.profile || themeConfig.profile || 'full';
+  if (!PROFILES[profile]) throw new Error(`Unknown profile "${profile}". Use one of: ${Object.keys(PROFILES).join(', ')}`);
   return {
     title: 'My Site', description: '', url: 'http://localhost:3000', lang: 'en',
     contentDir: 'content', publicDir: 'public', outDir: 'dist', layoutsDir: 'layouts',
-    minify: true, pageSize: 20, prefetch: true, drafts: false, feed: true, llms: true, markdownMirror: true,
+    minify: true, pageSize: 20, prefetch: true, drafts: false,
     aiCrawlers: 'allow', // 'allow' | 'block' | 'search-only'
-    ...Object.assign({}, ...themes.map(t => t.config)),
+    ...PROFILES[profile],
+    ...themeConfig,
     ...user,
+    profile,
     ...(css ? { css } : {}),
     themes,
   };
@@ -59,7 +73,7 @@ const clip = (s, n = 158) => (s.length <= n ? s : s.slice(0, n - 1).replace(/\s\
 export async function build(root = '.', opts = {}) {
   const t0 = performance.now();
   root = resolve(root);
-  const site = { ...(await loadConfig(root)), ...opts };
+  const site = { ...(await loadConfig(root, opts)), ...opts };
   site.url = site.url.replace(/\/$/, '');
   site.root = root;
   site.base = site.dev ? '' : basePath(site.url);

@@ -1,7 +1,8 @@
 // Astro vs Velocita: clean build, no-op rebuild, one-file-edit rebuild, output weight.
-// Usage: node bench/bench.mjs [counts=1000,5000] [runs=3]
+// Usage: node bench/bench.mjs [counts=1000,5000] [runs=3] [profiles=full]
+// profiles: comma-separated Velocita output profiles (minimal,standard,ai,full); Astro runs once per count.
 import { execFileSync } from "node:child_process";
-import { cpSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync, appendFileSync, mkdirSync } from "node:fs";
+import { cpSync, existsSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync, appendFileSync, mkdirSync } from "node:fs";
 import { join, dirname, extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { gzipSync } from "node:zlib";
@@ -9,6 +10,7 @@ import { gzipSync } from "node:zlib";
 const here = dirname(fileURLToPath(import.meta.url));
 const counts = (process.argv[2] ?? "1000,5000").split(",").map(Number);
 const runs = Number(process.argv[3] ?? 3);
+const profiles = (process.argv[4] ?? "full").split(",");
 const astro = join(here, "astro-site");
 const vel = join(here, "velocita-site");
 const velBin = join(here, "..", "bin", "velocita.js");
@@ -28,6 +30,11 @@ const fw = {
   velocita: {
     clean() { for (const d of ["dist", ".velocita-cache"]) rmSync(join(vel, d), { recursive: true, force: true }); },
     build() { run([velBin, "build", vel], here); },
+    configure(profile) {
+      const file = join(vel, "velocita.config.js");
+      const src = readFileSync(file, "utf8").replace(/^\s*profile: .*\n/m, "");
+      writeFileSync(file, src.replace("export default {\n", `export default {\n  profile: '${profile}',\n`));
+    },
     dist: join(vel, "dist"),
     post: (n) => join(vel, "dist", "blog", `post-${n}`, "index.html"),
   },
@@ -60,6 +67,7 @@ function weigh(f) {
   };
 }
 
+if (!existsSync(astroBin)) console.error("astro not installed in bench/astro-site: skipping Astro (run npm install there)");
 const results = [];
 for (const n of counts) {
   run([join(here, "gen-corpus.mjs"), String(n), join(here, "corpus")], here);
@@ -68,7 +76,9 @@ for (const n of counts) {
   cpSync(join(here, "corpus"), join(vel, "content", "blog"), { recursive: true });
   writeFileSync(join(vel, "content", "index.md"), "---\ntitle: Bench site\ndescription: Velocita benchmark site home page.\n---\n\n[Blog](/blog/)\n");
 
-  for (const [name, f] of Object.entries(fw)) {
+  const jobs = [...(existsSync(astroBin) ? [["astro", fw.astro, null]] : []),...profiles.map((p) => ["velocita", fw.velocita, p])];
+  for (const [name, f, profile] of jobs) {
+    if (profile) f.configure(profile);
     f.clean(); f.build(); // warm the OS file cache and JIT-independent disk state
     const clean = [], noop = [], edit = [];
     for (let i = 0; i < runs; i++) {
@@ -79,9 +89,10 @@ for (const n of counts) {
       appendFileSync(src, `\nEdited ${Date.now()}.\n`);
       edit.push(time(() => f.build()));
     }
-    const r = { framework: name, posts: n, cleanS: median(clean), noopS: median(noop), editOneS: median(edit), runs: { clean, noop, edit }, ...weigh(f) };
+    const r = { framework: name, ...(profile ? { profile } : {}), posts: n, cleanS: median(clean), noopS: median(noop), editOneS: median(edit), runs: { clean, noop, edit }, ...weigh(f) };
     console.log(JSON.stringify(r));
     results.push(r);
   }
 }
+fw.velocita.configure("full");
 writeFileSync(join(here, "results.json"), JSON.stringify({ date: new Date().toISOString(), node: process.version, results }, null, 2));

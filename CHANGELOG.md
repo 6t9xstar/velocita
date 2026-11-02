@@ -13,6 +13,10 @@ All notable changes are listed here. Velocita follows [Semantic Versioning](http
 - `velocita deploy init cloudflare` quotes the package name in `wrangler.toml`.
 - CI: actions pinned to commit SHAs, `persist-credentials: false`, per-job least-privilege `permissions:`, new CodeQL workflow. `SECURITY.md` documents scope, network calls and provenance.
 
+### Added
+- `profile` config option (`minimal` | `standard` | `ai` | `full`) picks which optional files a build emits. `minimal` writes HTML with meta tags, JSON-LD, sitemap and robots.txt. `standard` adds RSS/JSON feeds, OG images and responsive images. `ai` adds Markdown mirrors, `llms.txt` and `llms-full.txt`. `full` is the default and builds exactly what earlier versions built. Explicit `feed`, `ogImages`, `images`, `markdownMirror` and `llms` options override the profile. `PROFILES` is exported.
+- `bench/bench.mjs` takes a third argument, a comma-separated list of profiles, and skips Astro when `bench/astro-site` has no `node_modules`.
+
 ### Changed
 - `velocita`, `create-velocita` and `velocita-theme-paper` 1.1.0 are published on npm. Install docs now use `npm create velocita@latest` and `npm install velocita` instead of `npx github:6t9xstar/velocita`.
 

@@ -1,4 +1,4 @@
-export { build, loadConfig } from './build.js';
+export { build, loadConfig, PROFILES } from './build.js';
 
 /** Identity helper: `export default defineConfig({ ... })` gives editors the Config type. */
 export const defineConfig = config => config;
