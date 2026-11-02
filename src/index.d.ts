@@ -115,6 +115,14 @@ export function loadConfig(root: string): Promise<ResolvedConfig>;
 /** The underlying node:http Server (typed minimally so @types/node is not required). */
 export interface DevServer { address(): { address: string; port: number } | string | null; close(callback?: (err?: Error) => void): unknown }
 export function dev(root?: string, port?: number, opts?: { host?: string }): Promise<DevServer>;
+/** Serves the already-built output directory without rebuilding. Default port 4173, host 127.0.0.1. */
+export function preview(root?: string, port?: number, opts?: { host?: string }): Promise<DevServer>;
+/** Absolute paths the dev server watches: configured content/layouts/public dirs, the config file, local themes. */
+export function watchTargets(root: string): Promise<string[]>;
+
+export interface DoctorCheck { name: string; status: 'ok' | 'warn' | 'error'; message: string }
+/** Diagnoses a site without building it. `ok` is false when any check is an error. */
+export function doctor(root?: string, opts?: { nodeVersion?: string }): Promise<{ ok: boolean; checks: DoctorCheck[] }>;
 
 export interface RenderedMarkdown {
   html: string;
